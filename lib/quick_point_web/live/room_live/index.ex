@@ -8,7 +8,8 @@ defmodule QuickPointWeb.RoomLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, stream(socket, :rooms, Rooms.list_rooms())}
+    user = socket.assigns.current_user
+    {:ok, stream(socket, :rooms, Rooms.list_rooms(user))}
   end
 
   @impl true

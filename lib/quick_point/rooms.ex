@@ -19,8 +19,13 @@ defmodule QuickPoint.Rooms do
       [%Room{}, ...]
 
   """
-  def list_rooms do
-    Repo.all(Room)
+  def list_rooms(user) do
+    query =
+      from r in Room,
+        join: m in Role,
+        on: m.room_id == r.id and m.user_id == ^user.id and m.role == :moderator
+
+    Repo.all(query)
   end
 
   @doc """
@@ -72,7 +77,7 @@ defmodule QuickPoint.Rooms do
       {:ok, %{room: room}} ->
         {:ok, room}
 
-      {:error, _failed_operation, failed_value, _changes_so_far} ->
+      {:error, :room, failed_value, _changes_so_far} ->
         {:error, failed_value}
     end
   end
