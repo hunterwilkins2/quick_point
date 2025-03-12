@@ -28,11 +28,14 @@ defmodule QuickPointWeb.UserRegistrationLiveTest do
       result =
         lv
         |> element("#registration_form")
-        |> render_change(user: %{"email" => "with spaces", "password" => "too short"})
+        |> render_change(
+          user: %{"email" => "with spaces", "name" => "a", "password" => "invalid"}
+        )
 
       assert result =~ "Register"
       assert result =~ "must have the @ sign and no spaces"
-      assert result =~ "should be at least 12 character"
+      assert result =~ "should be at least 2 character(s)"
+      assert result =~ "should be at least 8 character(s)"
     end
   end
 
