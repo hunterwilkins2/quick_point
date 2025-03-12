@@ -28,6 +28,13 @@ defmodule QuickPointWeb.Router do
 
     live "/rooms/:id", RoomLive.Show, :show
     live "/rooms/:id/show/edit", RoomLive.Show, :edit
+
+    live "/rooms/:room_id/tickets", TicketLive.Index, :index
+    live "/rooms/:room_id/tickets/new", TicketLive.Index, :new
+    live "/rooms/:room_id/tickets/:id/edit", TicketLive.Index, :edit
+
+    live "/rooms/:room_id/tickets/:id", TicketLive.Show, :show
+    live "/rooms/:room_id/tickets/:id/show/edit", TicketLive.Show, :edit
   end
 
   # Other scopes may use custom stacks.

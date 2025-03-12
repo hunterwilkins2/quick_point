@@ -8,6 +8,7 @@ defmodule QuickPoint.Rooms.Room do
     field :name, :string
 
     many_to_many :users, QuickPoint.Accounts.User, join_through: QuickPoint.Rooms.Role
+    has_many :tickets, QuickPoint.Tickets.Ticket
 
     timestamps(type: :utc_datetime)
   end
