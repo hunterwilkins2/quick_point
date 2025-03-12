@@ -9,6 +9,8 @@ defmodule QuickPoint.Accounts.User do
     field :hashed_password, :string, redact: true
     field :current_password, :string, virtual: true, redact: true
 
+    many_to_many :rooms, QuickPoint.Rooms.Room, join_through: QuickPoint.Rooms.Role
+
     timestamps(type: :utc_datetime)
   end
 
