@@ -34,6 +34,7 @@ defmodule QuickPointWeb.RoomLive.Show do
       |> assign(:is_moderator, true)
       |> assign(:is_player, Enum.any?(roles, &(&1.role == :player)))
       |> assign(:is_observer, Enum.any?(roles, &(&1.role == :observer)))
+      |> assign(:vote, "")
 
     {:ok, socket, temporary_assigns: [ticket: nil]}
   end
@@ -57,6 +58,11 @@ defmodule QuickPointWeb.RoomLive.Show do
      socket
      |> stream(:tickets, Tickets.filter(socket.assigns.room, filter), reset: true)
      |> assign(:form, to_form(params))}
+  end
+
+  @impl true
+  def handle_event("voted", %{"vote" => value}, socket) do
+    {:noreply, assign(socket, :vote, value)}
   end
 
   @impl true

@@ -4,6 +4,51 @@ defmodule QuickPointWeb.CustomComponents do
 
   import QuickPointWeb.CoreComponents
 
+  attr :cards, :list, required: true
+  attr :vote, :string, default: ""
+
+  def cards(assigns) do
+    ~H"""
+    <form phx-change="voted" class="flex gap-10 flex-wrap justify-evenly">
+      <.card :for={card <- @cards} value={card} is_checked={card == @vote} />
+    </form>
+    """
+  end
+
+  attr :value, :string, required: true
+  attr :is_checked, :boolean, default: false
+
+  def card(assigns) do
+    ~H"""
+    <div class="[&_[type=radio]:checked+label]:bg-blue-500
+                [&_[type=radio]:checked+label]:text-white
+                [&_[type=radio]:checked+label]:border-blue-700
+                [&_[type=radio]:checked+label>div:nth-child(2)]:border-white
+    ">
+      <input
+        type="radio"
+        id={"card-#{@value}"}
+        value={@value}
+        name="vote"
+        checked={@is_checked}
+        class="hidden"
+      />
+      <label
+        for={"card-#{@value}"}
+        class="grid grid-rows-3 grid-cols-3 items-center justify-items-center cursor-pointer
+          w-24 h-32 bg-neutral-200 border-2 border-stone-300 rounded-md text-neutral-600
+          hover:border-blue-500"
+      >
+        <div class="col-1 row-1">{@value}</div>
+        <div class="col-start-2 row-start-2 text-xl w-12 h-16 text-center leading-[3.5rem] border-2 border-stone-300 rounded-md">
+          {@value}
+        </div>
+        <div class="col-start-3 row-start-3 rotate-180">{@value}</div>
+      </label>
+    </div>
+    """
+  end
+
   attr :room, QuickPoint.Rooms.Room, required: true
   attr :ticket_filter, :string, required: true
   attr :active_tickets, :integer, required: true
