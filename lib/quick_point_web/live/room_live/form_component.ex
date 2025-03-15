@@ -49,7 +49,7 @@ defmodule QuickPointWeb.RoomLive.FormComponent do
   end
 
   defp save_room(socket, :edit, room_params) do
-    case Rooms.update_room(socket.assigns.room, room_params) do
+    case Rooms.update_room(socket.assigns.current_user, socket.assigns.room, room_params) do
       {:ok, room} ->
         notify_parent({:saved, room})
 
@@ -60,6 +60,12 @@ defmodule QuickPointWeb.RoomLive.FormComponent do
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, form: to_form(changeset))}
+
+      {:error, :unauthorized_action} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "Only moderators may preform that action")
+         |> push_patch(to: socket.assigns.patch)}
     end
   end
 

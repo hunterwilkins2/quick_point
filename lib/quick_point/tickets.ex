@@ -8,6 +8,8 @@ defmodule QuickPoint.Tickets do
 
   alias QuickPoint.Tickets.Ticket
   alias QuickPoint.Rooms.Room
+  alias QuickPoint.Rooms
+  alias QuickPoint.Accounts.User
 
   @doc """
   Returns the list of tickets.
@@ -79,10 +81,16 @@ defmodule QuickPoint.Tickets do
       {:error, %Ecto.Changeset{}}
 
   """
-  def create_ticket(room, attrs \\ %{}) do
-    %Ticket{room: room}
-    |> Ticket.changeset(attrs)
-    |> Repo.insert()
+  def create_ticket(%User{} = user, %Room{} = room, attrs \\ %{}) do
+    case Rooms.is_moderator?(user, room) do
+      true ->
+        %Ticket{room: room}
+        |> Ticket.changeset(attrs)
+        |> Repo.insert()
+
+      false ->
+        {:error, :unauthorized_action}
+    end
   end
 
   @doc """
@@ -97,10 +105,16 @@ defmodule QuickPoint.Tickets do
       {:error, %Ecto.Changeset{}}
 
   """
-  def update_ticket(%Ticket{} = ticket, attrs) do
-    ticket
-    |> Ticket.changeset(attrs)
-    |> Repo.update()
+  def update_ticket(%User{} = user, %Room{} = room, %Ticket{} = ticket, attrs) do
+    case Rooms.is_moderator?(user, room) do
+      true ->
+        ticket
+        |> Ticket.changeset(attrs)
+        |> Repo.update()
+
+      false ->
+        {:error, :unauthorized_action}
+    end
   end
 
   @doc """
@@ -115,11 +129,27 @@ defmodule QuickPoint.Tickets do
       {:error, %Ecto.Changeset{}}
 
   """
-  def delete_ticket(%Ticket{} = ticket) do
-    Repo.delete(ticket)
+  def delete_ticket(%User{} = user, %Room{} = room, %Ticket{} = ticket) do
+    case Rooms.is_moderator?(user, room) do
+      true ->
+        Repo.delete(ticket)
+
+      false ->
+        {:error, :unauthorized_action}
+    end
   end
 
-  def delete_where(%Room{} = room, "not_started") do
+  def delete_where(%User{} = user, %Room{} = room, filter) do
+    case Rooms.is_moderator?(user, room) do
+      true ->
+        delete_tickets(room, filter)
+
+      false ->
+        {:error, :unauthorized_action}
+    end
+  end
+
+  defp delete_tickets(%Room{} = room, "not_started") do
     query =
       from Ticket,
         where: [status: :not_started, room_id: ^room.id]
@@ -127,7 +157,7 @@ defmodule QuickPoint.Tickets do
     Repo.delete_all(query)
   end
 
-  def delete_where(%Room{} = room, "completed") do
+  defp delete_tickets(%Room{} = room, "completed") do
     query =
       from Ticket,
         where: [status: :completed, room_id: ^room.id]
@@ -135,7 +165,7 @@ defmodule QuickPoint.Tickets do
     Repo.delete_all(query)
   end
 
-  def delete_where(%Room{} = room, "total") do
+  defp delete_tickets(%Room{} = room, "total") do
     query =
       from Ticket,
         where: [room_id: ^room.id]

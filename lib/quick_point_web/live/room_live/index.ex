@@ -9,7 +9,13 @@ defmodule QuickPointWeb.RoomLive.Index do
   @impl true
   def mount(_params, _session, socket) do
     user = socket.assigns.current_user
-    {:ok, stream(socket, :rooms, Rooms.list_rooms(user))}
+    %{moderator: rooms_owned, visited: rooms_visited} = Rooms.list_rooms(user)
+
+    {:ok,
+     socket
+     |> stream(:rooms_owned, rooms_owned)
+     |> stream(:rooms_visited, rooms_visited)
+     |> assign(:has_visited_room, Enum.count(rooms_visited) > 0)}
   end
 
   @impl true
@@ -43,8 +49,16 @@ defmodule QuickPointWeb.RoomLive.Index do
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do
     room = Rooms.get_room!(id)
-    {:ok, _} = Rooms.delete_room(room)
 
-    {:noreply, stream_delete(socket, :rooms, room)}
+    case Rooms.delete_room(socket.assigns.current_user, room) do
+      {:ok, _} ->
+        {:noreply, stream_delete(socket, :rooms, room)}
+
+      {:error, :unauthorized_action} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "Only moderators may preform that action")
+         |> push_event("restore", %{id: "rooms_owned-#{room.id}"})}
+    end
   end
 end

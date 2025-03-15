@@ -10,6 +10,7 @@ defmodule QuickPoint.Rooms do
   alias QuickPoint.Rooms.Room
   alias QuickPoint.Rooms.Role
   alias QuickPoint.Tickets.Ticket
+  alias QuickPoint.Accounts.User
 
   @doc """
   Returns the list of rooms.
@@ -21,12 +22,28 @@ defmodule QuickPoint.Rooms do
 
   """
   def list_rooms(user) do
-    query =
+    moderator_query =
       from r in Room,
         join: m in Role,
         on: m.room_id == r.id and m.user_id == ^user.id and m.role == :moderator
 
-    Repo.all(query)
+    player_query =
+      from r in Room,
+        as: :room,
+        join: m in Role,
+        on: m.room_id == r.id and m.user_id == ^user.id,
+        where:
+          not exists(
+            from p in Role,
+              where:
+                parent_as(:room).id == p.room_id and p.user_id == ^user.id and
+                  p.role == :moderator
+          )
+
+    rooms_owned = Repo.all(moderator_query)
+    rooms_visited = Repo.all(player_query)
+
+    %{moderator: rooms_owned, visited: rooms_visited}
   end
 
   @doc """
@@ -122,10 +139,16 @@ defmodule QuickPoint.Rooms do
       {:error, %Ecto.Changeset{}}
 
   """
-  def update_room(%Room{} = room, attrs) do
-    room
-    |> Room.changeset(attrs)
-    |> Repo.update()
+  def update_room(%User{} = user, %Room{} = room, attrs) do
+    case is_moderator?(user, room) do
+      true ->
+        room
+        |> Room.changeset(attrs)
+        |> Repo.update()
+
+      false ->
+        {:error, :unauthorized_action}
+    end
   end
 
   @doc """
@@ -140,8 +163,14 @@ defmodule QuickPoint.Rooms do
       {:error, %Ecto.Changeset{}}
 
   """
-  def delete_room(%Room{} = room) do
-    Repo.delete(room)
+  def delete_room(%User{} = user, %Room{} = room) do
+    case is_moderator?(user, room) do
+      true ->
+        Repo.delete(room)
+
+      false ->
+        {:error, :unauthorized_action}
+    end
   end
 
   @doc """
@@ -155,5 +184,30 @@ defmodule QuickPoint.Rooms do
   """
   def change_room(%Room{} = room, attrs \\ %{}) do
     Room.changeset(room, attrs)
+  end
+
+  def list_or_create_roles(%User{} = user, %Room{} = room) do
+    query =
+      from r in Role,
+        where: [user_id: ^user.id, room_id: ^room.id]
+
+    case Repo.all(query) do
+      [] ->
+        player_role =
+          Repo.insert!(Role.changeset(%Role{user: user, room: room}, %{role: :player}))
+
+        [player_role]
+
+      roles ->
+        roles
+    end
+  end
+
+  def is_moderator?(%User{} = user, %Room{} = room) do
+    query =
+      from Role,
+        where: [user_id: ^user.id, room_id: ^room.id, role: :moderator]
+
+    Repo.exists?(query)
   end
 end

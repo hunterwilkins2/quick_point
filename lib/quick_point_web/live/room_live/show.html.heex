@@ -11,6 +11,7 @@
   active_tickets={@active_tickets}
   completed_tickets={@completed_tickets}
   total_tickets={@total_tickets}
+  is_moderator={@is_moderator}
 />
 
 <.table id="tickets" rows={@streams.tickets}>
@@ -19,24 +20,31 @@
   <:col :let={{_id, ticket}} :if={@form[:ticket_filter].value != "not_started"} label="Effort">
     {ticket.effort}
   </:col>
-  <:action :let={{_id, ticket}}>
+
+  <:action :let={{_id, ticket}} :if={@is_moderator}>
     <.link patch={~p"/rooms/#{@room}/tickets/#{ticket}/edit"}>Edit</.link>
   </:action>
-  <:action :let={{id, ticket}}>
+  <:action :let={{id, ticket}} :if={@is_moderator}>
     <.link
       phx-click={JS.push("delete", value: %{id: ticket.id}) |> hide("##{id}")}
+      data-restore={show("##{id}")}
       data-confirm="Are you sure?"
     >
       Delete
     </.link>
   </:action>
 </.table>
-<.button phx-click={JS.push("delete-all")} data-confirm="Are you sure?" class="float-end">
+<.button
+  :if={@is_moderator}
+  phx-click={JS.push("delete-all")}
+  data-confirm="Are you sure?"
+  class="float-end"
+>
   Delete All
 </.button>
 
 <.modal
-  :if={@live_action in [:new_ticket, :edit_ticket]}
+  :if={@live_action in [:new_ticket, :edit_ticket] and @is_moderator}
   id="ticket-modal"
   show
   on_cancel={JS.patch(~p"/rooms/#{@room}")}
@@ -48,6 +56,7 @@
     action={@live_action}
     ticket={@ticket}
     room={@room}
+    current_user={@current_user}
     patch={~p"/rooms/#{@room}"}
   />
 </.modal>

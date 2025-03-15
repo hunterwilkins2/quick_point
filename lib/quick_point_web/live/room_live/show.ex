@@ -18,6 +18,9 @@ defmodule QuickPointWeb.RoomLive.Show do
 
     tickets = Tickets.filter(room, "not_started")
 
+    current_user = socket.assigns.current_user
+    roles = Rooms.list_or_create_roles(current_user, room)
+
     socket =
       socket
       |> assign(:page_title, "Show Room")
@@ -27,6 +30,10 @@ defmodule QuickPointWeb.RoomLive.Show do
       |> assign(:active_tickets, active_tickets)
       |> assign(:completed_tickets, completed_tickets)
       |> stream(:tickets, tickets)
+      # |> assign(:is_moderator, Enum.any?(roles, &(&1.role == :moderator)))
+      |> assign(:is_moderator, true)
+      |> assign(:is_player, Enum.any?(roles, &(&1.role == :player)))
+      |> assign(:is_observer, Enum.any?(roles, &(&1.role == :observer)))
 
     {:ok, socket, temporary_assigns: [ticket: nil]}
   end
@@ -55,23 +62,36 @@ defmodule QuickPointWeb.RoomLive.Show do
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do
     ticket = Tickets.get_ticket!(id)
-    {:ok, _} = Tickets.delete_ticket(ticket)
 
-    {:noreply,
-     socket
-     |> stream_delete(:tickets, ticket)
-     |> update_counts(ticket.status, -1)}
+    case Tickets.delete_ticket(socket.assigns.current_user, socket.assigns.room, ticket) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> stream_delete(:tickets, ticket)
+         |> update_counts(ticket.status, -1)}
+
+      {:error, :unauthorized_action} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "Only moderators may preform that action")
+         |> push_event("restore", %{id: "tickets-#{ticket.id}"})}
+    end
   end
 
   @impl true
   def handle_event("delete-all", _params, socket) do
     filter = socket.assigns.form[:ticket_filter].value
-    {count, _} = Tickets.delete_where(socket.assigns.room, filter)
 
-    {:noreply,
-     socket
-     |> stream(:tickets, [], reset: true)
-     |> update_counts(filter, -count)}
+    case Tickets.delete_where(socket.assigns.current_user, socket.assigns.room, filter) do
+      {:error, :unauthorized_action} ->
+        {:noreply, put_flash(socket, :error, "Only moderators may preform that action")}
+
+      {count, _} ->
+        {:noreply,
+         socket
+         |> stream(:tickets, [], reset: true)
+         |> update_counts(filter, -count)}
+    end
   end
 
   @impl true

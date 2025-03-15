@@ -9,6 +9,7 @@ defmodule QuickPointWeb.CustomComponents do
   attr :active_tickets, :integer, required: true
   attr :completed_tickets, :integer, required: true
   attr :total_tickets, :integer, required: true
+  attr :is_moderator, :boolean, default: false
 
   def ticket_selector(assigns) do
     ~H"""
@@ -81,7 +82,7 @@ defmodule QuickPointWeb.CustomComponents do
           </span>
         </label>
       </div>
-      <div class="flex-grow">
+      <div :if={@is_moderator} class="flex-grow">
         <.link patch={~p"/rooms/#{@room}/tickets/new"} class="float-end">
           <.button>New Ticket</.button>
         </.link>

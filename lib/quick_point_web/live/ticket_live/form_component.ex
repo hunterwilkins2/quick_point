@@ -51,7 +51,12 @@ defmodule QuickPointWeb.TicketLive.FormComponent do
   end
 
   defp save_ticket(socket, :edit_ticket, ticket_params) do
-    case Tickets.update_ticket(socket.assigns.ticket, ticket_params) do
+    case Tickets.update_ticket(
+           socket.assigns.current_user,
+           socket.assigns.room,
+           socket.assigns.ticket,
+           ticket_params
+         ) do
       {:ok, ticket} ->
         notify_parent({:edited, ticket})
 
@@ -62,11 +67,17 @@ defmodule QuickPointWeb.TicketLive.FormComponent do
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, form: to_form(changeset))}
+
+      {:error, :unauthorized_action} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "Only moderators may preform that action")
+         |> push_patch(to: socket.assigns.patch)}
     end
   end
 
   defp save_ticket(socket, :new_ticket, ticket_params) do
-    case Tickets.create_ticket(socket.assigns.room, ticket_params) do
+    case Tickets.create_ticket(socket.assigns.current_user, socket.assigns.room, ticket_params) do
       {:ok, ticket} ->
         notify_parent({:saved, ticket})
 
@@ -77,6 +88,12 @@ defmodule QuickPointWeb.TicketLive.FormComponent do
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, form: to_form(changeset))}
+
+      {:error, :unauthorized_action} ->
+        {:noreply,
+         socket
+         |> put_flash(:error, "Only moderators may preform that action")
+         |> push_patch(to: socket.assigns.patch)}
     end
   end
 
