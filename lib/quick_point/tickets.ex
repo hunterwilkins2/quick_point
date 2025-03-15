@@ -7,6 +7,7 @@ defmodule QuickPoint.Tickets do
   alias QuickPoint.Repo
 
   alias QuickPoint.Tickets.Ticket
+  alias QuickPoint.Rooms.Room
 
   @doc """
   Returns the list of tickets.
@@ -38,6 +39,33 @@ defmodule QuickPoint.Tickets do
 
   """
   def get_ticket!(id), do: Repo.get!(Ticket, id)
+
+  def filter(room, "not_started") do
+    query =
+      from Ticket,
+        where: [status: :not_started, room_id: ^room.id],
+        order_by: [asc: :updated_at]
+
+    Repo.all(query)
+  end
+
+  def filter(room, "completed") do
+    query =
+      from Ticket,
+        where: [status: :completed, room_id: ^room.id],
+        order_by: [desc: :updated_at]
+
+    Repo.all(query)
+  end
+
+  def filter(room, "total") do
+    query =
+      from Ticket,
+        where: [room_id: ^room.id],
+        order_by: [asc: :id]
+
+    Repo.all(query)
+  end
 
   @doc """
   Creates a ticket.
@@ -89,6 +117,30 @@ defmodule QuickPoint.Tickets do
   """
   def delete_ticket(%Ticket{} = ticket) do
     Repo.delete(ticket)
+  end
+
+  def delete_where(%Room{} = room, "not_started") do
+    query =
+      from Ticket,
+        where: [status: :not_started, room_id: ^room.id]
+
+    Repo.delete_all(query)
+  end
+
+  def delete_where(%Room{} = room, "completed") do
+    query =
+      from Ticket,
+        where: [status: :completed, room_id: ^room.id]
+
+    Repo.delete_all(query)
+  end
+
+  def delete_where(%Room{} = room, "total") do
+    query =
+      from Ticket,
+        where: [room_id: ^room.id]
+
+    Repo.delete_all(query)
   end
 
   @doc """

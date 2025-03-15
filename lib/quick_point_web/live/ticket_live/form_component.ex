@@ -21,14 +21,7 @@ defmodule QuickPointWeb.TicketLive.FormComponent do
       >
         <.input field={@form[:name]} type="text" label="Name" />
         <.input field={@form[:description]} type="text" label="Description" />
-        <.input field={@form[:effort]} type="number" label="Effort" />
-        <.input
-          field={@form[:status]}
-          type="select"
-          label="Status"
-          prompt="Choose a value"
-          options={Ecto.Enum.values(QuickPoint.Tickets.Ticket, :status)}
-        />
+
         <:actions>
           <.button phx-disable-with="Saving...">Save Ticket</.button>
         </:actions>
@@ -57,10 +50,10 @@ defmodule QuickPointWeb.TicketLive.FormComponent do
     save_ticket(socket, socket.assigns.action, ticket_params)
   end
 
-  defp save_ticket(socket, :edit, ticket_params) do
+  defp save_ticket(socket, :edit_ticket, ticket_params) do
     case Tickets.update_ticket(socket.assigns.ticket, ticket_params) do
       {:ok, ticket} ->
-        notify_parent({:saved, ticket})
+        notify_parent({:edited, ticket})
 
         {:noreply,
          socket
@@ -72,7 +65,7 @@ defmodule QuickPointWeb.TicketLive.FormComponent do
     end
   end
 
-  defp save_ticket(socket, :new, ticket_params) do
+  defp save_ticket(socket, :new_ticket, ticket_params) do
     case Tickets.create_ticket(socket.assigns.room, ticket_params) do
       {:ok, ticket} ->
         notify_parent({:saved, ticket})

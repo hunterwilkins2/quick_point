@@ -84,6 +84,7 @@ defmodule QuickPointWeb do
       import Phoenix.HTML
       # Core UI components
       import QuickPointWeb.CoreComponents
+      import QuickPointWeb.CustomComponents
 
       # Shortcut for generating JS commands
       alias Phoenix.LiveView.JS

@@ -1,25 +1,52 @@
 <.header>
-  Room {@room.id}
-  <:subtitle>This is a room record from your database.</:subtitle>
+  {@room.name}
   <:actions>
-    <.link patch={~p"/rooms/#{@room}/show/edit"} phx-click={JS.push_focus()}>
-      <.button>Edit room</.button>
-    </.link>
+    <.back navigate={~p"/rooms"}>Back to rooms</.back>
   </:actions>
 </.header>
 
-<.list>
-  <:item title="Name">{@room.name}</:item>
-</.list>
+<.ticket_selector
+  room={@room}
+  ticket_filter={@form[:ticket_filter].value}
+  active_tickets={@active_tickets}
+  completed_tickets={@completed_tickets}
+  total_tickets={@total_tickets}
+/>
 
-<.back navigate={~p"/rooms"}>Back to rooms</.back>
+<.table id="tickets" rows={@streams.tickets}>
+  <:col :let={{_id, ticket}} label="Name">{ticket.name}</:col>
+  <:col :let={{_id, ticket}} label="Description">{ticket.description}</:col>
+  <:col :let={{_id, ticket}} :if={@form[:ticket_filter].value != "not_started"} label="Effort">
+    {ticket.effort}
+  </:col>
+  <:action :let={{_id, ticket}}>
+    <.link patch={~p"/rooms/#{@room}/tickets/#{ticket}/edit"}>Edit</.link>
+  </:action>
+  <:action :let={{id, ticket}}>
+    <.link
+      phx-click={JS.push("delete", value: %{id: ticket.id}) |> hide("##{id}")}
+      data-confirm="Are you sure?"
+    >
+      Delete
+    </.link>
+  </:action>
+</.table>
+<.button phx-click={JS.push("delete-all")} data-confirm="Are you sure?" class="float-end">
+  Delete All
+</.button>
 
-<.modal :if={@live_action == :edit} id="room-modal" show on_cancel={JS.patch(~p"/rooms/#{@room}")}>
+<.modal
+  :if={@live_action in [:new_ticket, :edit_ticket]}
+  id="ticket-modal"
+  show
+  on_cancel={JS.patch(~p"/rooms/#{@room}")}
+>
   <.live_component
-    module={QuickPointWeb.RoomLive.FormComponent}
-    id={@room.id}
+    module={QuickPointWeb.TicketLive.FormComponent}
+    id={@ticket.id || :new}
     title={@page_title}
     action={@live_action}
+    ticket={@ticket}
     room={@room}
     patch={~p"/rooms/#{@room}"}
   />

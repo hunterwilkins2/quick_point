@@ -2,22 +2,122 @@ defmodule QuickPointWeb.RoomLive.Show do
   use QuickPointWeb, :live_view
 
   alias QuickPoint.Rooms
+  alias QuickPoint.Tickets
+  alias QuickPoint.Tickets.Ticket
 
   on_mount {QuickPointWeb.UserAuth, :ensure_authenticated}
 
   @impl true
-  def mount(_params, _session, socket) do
-    {:ok, socket}
+  def mount(%{"id" => id}, _session, socket) do
+    %{
+      room: room,
+      total_tickets: total_tickets,
+      active_tickets: active_tickets,
+      completed_tickets: completed_tickets
+    } = Rooms.get_room_and_tickets!(id)
+
+    tickets = Tickets.filter(room, "not_started")
+
+    socket =
+      socket
+      |> assign(:page_title, "Show Room")
+      |> assign(:form, to_form(%{"ticket_filter" => "not_started"}))
+      |> assign(:room, room)
+      |> assign(:total_tickets, total_tickets)
+      |> assign(:active_tickets, active_tickets)
+      |> assign(:completed_tickets, completed_tickets)
+      |> stream(:tickets, tickets)
+
+    {:ok, socket, temporary_assigns: [ticket: nil]}
   end
 
   @impl true
-  def handle_params(%{"id" => id}, _, socket) do
-    {:noreply,
-     socket
-     |> assign(:page_title, page_title(socket.assigns.live_action))
-     |> assign(:room, Rooms.get_room!(id))}
+  def handle_params(%{"ticket_id" => id}, _, %{assigns: %{live_action: :edit_ticket}} = socket) do
+    {:noreply, assign(socket, :ticket, Tickets.get_ticket!(id))}
   end
 
-  defp page_title(:show), do: "Show Room"
-  defp page_title(:edit), do: "Edit Room"
+  @impl true
+  def handle_params(_params, _session, %{assigns: %{live_action: :new_ticket}} = socket) do
+    {:noreply, assign(socket, :ticket, %Ticket{})}
+  end
+
+  @impl true
+  def handle_params(_, _, socket), do: {:noreply, socket}
+
+  @impl true
+  def handle_event("filter", %{"ticket_filter" => filter} = params, socket) do
+    {:noreply,
+     socket
+     |> stream(:tickets, Tickets.filter(socket.assigns.room, filter), reset: true)
+     |> assign(:form, to_form(params))}
+  end
+
+  @impl true
+  def handle_event("delete", %{"id" => id}, socket) do
+    ticket = Tickets.get_ticket!(id)
+    {:ok, _} = Tickets.delete_ticket(ticket)
+
+    {:noreply,
+     socket
+     |> stream_delete(:tickets, ticket)
+     |> update_counts(ticket.status, -1)}
+  end
+
+  @impl true
+  def handle_event("delete-all", _params, socket) do
+    filter = socket.assigns.form[:ticket_filter].value
+    {count, _} = Tickets.delete_where(socket.assigns.room, filter)
+
+    {:noreply,
+     socket
+     |> stream(:tickets, [], reset: true)
+     |> update_counts(filter, -count)}
+  end
+
+  @impl true
+  def handle_info({QuickPointWeb.TicketLive.FormComponent, {:saved, ticket}}, socket) do
+    filter = socket.assigns.form[:ticket_filter].value
+
+    socket =
+      if filter != "completed" do
+        stream_insert(socket, :tickets, ticket)
+      else
+        socket
+      end
+
+    {:noreply, update_counts(socket, :not_started, 1)}
+  end
+
+  @impl true
+  def handle_info({QuickPointWeb.TicketLive.FormComponent, {:edited, ticket}}, socket) do
+    {:noreply, stream_insert(socket, :tickets, ticket)}
+  end
+
+  defp update_counts(socket, :not_started, count) do
+    socket
+    |> assign(:active_tickets, socket.assigns.active_tickets + count)
+    |> assign(:total_tickets, socket.assigns.total_tickets + count)
+  end
+
+  defp update_counts(socket, :completed, count) do
+    socket
+    |> assign(:completed_tickets, socket.assigns.completed_tickets + count)
+    |> assign(:total_tickets, socket.assigns.total_tickets + count)
+  end
+
+  defp update_counts(socket, filter, count) when is_bitstring(filter) do
+    case filter do
+      "not_started" ->
+        update_counts(socket, :not_started, count)
+
+      "completed" ->
+        update_counts(socket, :completed, count)
+
+      "total" ->
+        socket
+        |> assign(:active_tickets, 0)
+        |> assign(:completed_tickets, 0)
+        |> assign(:total_tickets, 0)
+    end
+  end
 end

@@ -9,6 +9,7 @@ defmodule QuickPoint.Rooms do
 
   alias QuickPoint.Rooms.Room
   alias QuickPoint.Rooms.Role
+  alias QuickPoint.Tickets.Ticket
 
   @doc """
   Returns the list of rooms.
@@ -43,6 +44,33 @@ defmodule QuickPoint.Rooms do
 
   """
   def get_room!(id), do: Repo.get!(Room, id)
+
+  def get_room_and_tickets!(id) do
+    query =
+      from r in Room,
+        where: r.id == ^id,
+        left_join: t in Ticket,
+        on: t.room_id == r.id,
+        group_by: [r.id],
+        select: %{
+          room: r,
+          total_tickets: count(t.id),
+          active_tickets:
+            sum(
+              fragment("""
+              case when t1."status" = 'not_started' then 1 else 0 end
+              """)
+            ),
+          completed_tickets:
+            sum(
+              fragment("""
+              case when t1."status" = 'completed' then 1 else 0 end
+              """)
+            )
+        }
+
+    Repo.one(query)
+  end
 
   @doc """
   Creates a room.
