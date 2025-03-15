@@ -22,7 +22,7 @@ defmodule QuickPointWeb.CustomComponents do
     ~H"""
     <div class="[&_[type=radio]:checked+label]:bg-blue-500
                 [&_[type=radio]:checked+label]:text-white
-                [&_[type=radio]:checked+label]:border-blue-700
+                [&_[type=radio]:checked+label]:border-blue-600
                 [&_[type=radio]:checked+label>div:nth-child(2)]:border-white
     ">
       <input
