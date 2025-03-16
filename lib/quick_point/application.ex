@@ -15,7 +15,8 @@ defmodule QuickPoint.Application do
       # Start a worker by calling: QuickPoint.Worker.start_link(arg)
       # {QuickPoint.Worker, arg},
       # Start to serve requests, typically the last entry
-      QuickPointWeb.Endpoint
+      QuickPointWeb.Endpoint,
+      QuickPointWeb.Presence
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

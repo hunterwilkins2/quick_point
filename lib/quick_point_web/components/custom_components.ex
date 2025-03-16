@@ -37,7 +37,7 @@ defmodule QuickPointWeb.CustomComponents do
         for={"card-#{@value}"}
         class="grid grid-rows-3 grid-cols-3 items-center justify-items-center cursor-pointer
           w-24 h-32 bg-neutral-200 border-2 border-stone-300 rounded-md text-neutral-600
-          hover:border-blue-500"
+          shadow-md select-none hover:border-blue-500"
       >
         <div class="col-1 row-1">{@value}</div>
         <div class="col-start-2 row-start-2 text-xl w-12 h-16 text-center leading-[3.5rem] border-2 border-stone-300 rounded-md">

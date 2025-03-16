@@ -21,6 +21,22 @@ defmodule QuickPointWeb.RoomLive.Show do
     current_user = socket.assigns.current_user
     roles = Rooms.list_or_create_roles(current_user, room)
 
+    socket = stream(socket, :presences, [])
+
+    socket =
+      if connected?(socket) do
+        QuickPointWeb.Presence.track_user(room.id, current_user.id, %{
+          id: current_user.id,
+          name: current_user.name,
+          roles: roles |> Enum.map(& &1.role)
+        })
+
+        QuickPointWeb.Presence.subscribe(room.id)
+        stream(socket, :presences, QuickPointWeb.Presence.list_online_users(room.id))
+      else
+        socket
+      end
+
     socket =
       socket
       |> assign(:page_title, "Show Room")
@@ -30,8 +46,7 @@ defmodule QuickPointWeb.RoomLive.Show do
       |> assign(:active_tickets, active_tickets)
       |> assign(:completed_tickets, completed_tickets)
       |> stream(:tickets, tickets)
-      # |> assign(:is_moderator, Enum.any?(roles, &(&1.role == :moderator)))
-      |> assign(:is_moderator, true)
+      |> assign(:is_moderator, Enum.any?(roles, &(&1.role == :moderator)))
       |> assign(:is_player, Enum.any?(roles, &(&1.role == :player)))
       |> assign(:is_observer, Enum.any?(roles, &(&1.role == :observer)))
       |> assign(:vote, "")
@@ -97,6 +112,20 @@ defmodule QuickPointWeb.RoomLive.Show do
          socket
          |> stream(:tickets, [], reset: true)
          |> update_counts(filter, -count)}
+    end
+  end
+
+  @impl true
+  def handle_info({QuickPointWeb.Presence, {:join, presence}}, socket) do
+    {:noreply, stream_insert(socket, :presences, presence)}
+  end
+
+  @impl true
+  def handle_info({QuickPointWeb.Presence, {:leave, presence}}, socket) do
+    if presence.metas == [] do
+      {:noreply, stream_delete(socket, :presences, presence)}
+    else
+      {:noreply, stream_insert(socket, :presences, presence)}
     end
   end
 

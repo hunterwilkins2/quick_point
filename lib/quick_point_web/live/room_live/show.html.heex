@@ -5,45 +5,106 @@
   </:actions>
 </.header>
 
-<.cards cards={~W"½ 1 2 3 5 8 13 21 ? ☕"} vote={@vote} />
+<div class="grid grid-cols-[8fr_4fr] gap-16 mt-8">
+  <div>
+    <.cards cards={~W"½ 1 2 3 5 8 13 21 ? ☕"} vote={@vote} />
 
-<.ticket_selector
-  room={@room}
-  ticket_filter={@form[:ticket_filter].value}
-  active_tickets={@active_tickets}
-  completed_tickets={@completed_tickets}
-  total_tickets={@total_tickets}
-  is_moderator={@is_moderator}
-/>
+    <.ticket_selector
+      room={@room}
+      ticket_filter={@form[:ticket_filter].value}
+      active_tickets={@active_tickets}
+      completed_tickets={@completed_tickets}
+      total_tickets={@total_tickets}
+      is_moderator={@is_moderator}
+    />
 
-<.table id="tickets" rows={@streams.tickets}>
-  <:col :let={{_id, ticket}} label="Name">{ticket.name}</:col>
-  <:col :let={{_id, ticket}} label="Description">{ticket.description}</:col>
-  <:col :let={{_id, ticket}} :if={@form[:ticket_filter].value != "not_started"} label="Effort">
-    {ticket.effort}
-  </:col>
+    <.table id="tickets" rows={@streams.tickets}>
+      <:col :let={{_id, ticket}} label="Name">{ticket.name}</:col>
+      <:col :let={{_id, ticket}} label="Description">{ticket.description}</:col>
+      <:col :let={{_id, ticket}} :if={@form[:ticket_filter].value != "not_started"} label="Effort">
+        {ticket.effort}
+      </:col>
 
-  <:action :let={{_id, ticket}} :if={@is_moderator}>
-    <.link patch={~p"/rooms/#{@room}/tickets/#{ticket}/edit"}>Edit</.link>
-  </:action>
-  <:action :let={{id, ticket}} :if={@is_moderator}>
-    <.link
-      phx-click={JS.push("delete", value: %{id: ticket.id}) |> hide("##{id}")}
-      data-restore={show("##{id}")}
+      <:action :let={{_id, ticket}} :if={@is_moderator}>
+        <.link patch={~p"/rooms/#{@room}/tickets/#{ticket}/edit"}>Edit</.link>
+      </:action>
+      <:action :let={{id, ticket}} :if={@is_moderator}>
+        <.link
+          phx-click={JS.push("delete", value: %{id: ticket.id}) |> hide("##{id}")}
+          data-restore={show("##{id}")}
+          data-confirm="Are you sure?"
+        >
+          Delete
+        </.link>
+      </:action>
+    </.table>
+    <.button
+      :if={@is_moderator}
+      phx-click={JS.push("delete-all")}
       data-confirm="Are you sure?"
+      class="float-end"
     >
-      Delete
-    </.link>
-  </:action>
-</.table>
-<.button
-  :if={@is_moderator}
-  phx-click={JS.push("delete-all")}
-  data-confirm="Are you sure?"
-  class="float-end"
->
-  Delete All
-</.button>
+      Delete All
+    </.button>
+  </div>
+
+  <div class="bg-neutral-200 h-min rounded-md shadow-md 
+    [&>*]:p-4 [&>*:not(:last-child)]:border-b [&>*:not(:last-child)]:border-stone-300
+  ">
+    <p class="text-center font-semibold text-lg bg-blue-500 text-white rounded-t-md">
+      Waiting on two players to vote
+    </p>
+    <div class="grid grid-cols-2 gap-4">
+      <.button class="!bg-transparent !text-blue-500 outline outline-1 outline-blue-500 rounded-md 
+        hover:outline-2 hover:outline-blue-600 hover:bg-transparent
+      ">
+        Clear Votes
+      </.button>
+      <.button class="!bg-transparent !text-blue-500 outline outline-1 outline-blue-500 rounded-md 
+        hover:outline-2 hover:outline-blue-600 hover:bg-transparent
+      ">
+        Next Story
+      </.button>
+    </div>
+    <p class="text-2xl">Players:</p>
+    <ul
+      id="online_users"
+      phx-update="stream"
+      class="!p-0 border-none 
+      [&>*]:p-4 [&>*]:border-b [&>*]:border-stone-300
+    "
+    >
+      <li
+        :for={{dom_id, %{user: %{name: name}}} <- @streams.presences}
+        id={dom_id}
+        class="w-full flex items-center [&>.user-icon]:hover:hidden [&>.cog-icon]:hover:block"
+      >
+        <button
+          popovertarget="role-form"
+          class="w-8 h-8 bg-slate-300 rounded-full mr-4 relative cursor-pointer [&>.user-icon]:hover:hidden [&>.cog-icon]:hover:block"
+        >
+          <Heroicons.icon
+            name="user"
+            type="solid"
+            class="user-icon absolute h-3/4 w-3/4 fill-current stroke-none top-1 left-1"
+          />
+          <Heroicons.icon
+            name="cog-6-tooth"
+            type="outline"
+            class="cog-icon hidden absolute h-3/4 w-3/4 top-1 left-1"
+          />
+        </button>
+        <p>{name}</p>
+        <Heroicons.icon name="check-circle" type="outline" class="text-blue-500 ml-1 h-5 w-5" />
+        <p class="ml-auto font-semibold">{5}</p>
+      </li>
+    </ul>
+    <details>
+      <summary>Invite a teammate</summary>
+      <input id="share-link" type="text" value="wut" />
+    </details>
+  </div>
+</div>
 
 <.modal
   :if={@live_action in [:new_ticket, :edit_ticket] and @is_moderator}
