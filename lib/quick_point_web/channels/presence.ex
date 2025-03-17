@@ -26,11 +26,25 @@ defmodule QuickPointWeb.Presence do
     end
   end
 
-  def handle_metas(topic, %{joins: joins, leaves: leaves}, presences, state) do
+  def handle_metas(
+        "online_users:" <> room_id = topic,
+        %{joins: joins, leaves: leaves},
+        presences,
+        state
+      ) do
+    Logger.info("Users in room #{room_id}: #{Map.keys(presences) |> Enum.count()}",
+      ansi_color: :yellow
+    )
+
+    if Map.keys(presences) |> Enum.count() == 0 do
+      QuickPoint.Game.Supervisor.stop(room_id)
+    end
+
     for {user_id, presence} <- joins do
       user_data = %{id: user_id, user: presence.user, metas: Map.fetch!(presences, user_id)}
       msg = {__MODULE__, {:join, user_data}}
       Phoenix.PubSub.broadcast(QuickPoint.PubSub, "proxy:#{topic}", msg)
+      QuickPoint.Game.GameState.add_user(room_id, presence)
     end
 
     for {user_id, presence} <- leaves do
@@ -43,6 +57,7 @@ defmodule QuickPointWeb.Presence do
       user_data = %{id: user_id, user: presence.user, metas: metas}
       msg = {__MODULE__, {:leave, user_data}}
       Phoenix.PubSub.broadcast(QuickPoint.PubSub, "proxy:#{topic}", msg)
+      QuickPoint.Game.GameState.remove_user(room_id, presence)
     end
 
     {:ok, state}

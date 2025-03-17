@@ -75,7 +75,10 @@
     "
     >
       <li
-        :for={{dom_id, %{user: %{name: name}}} <- @streams.presences}
+        :for={
+          {dom_id, %{user: %{name: name}, vote: vote}} <-
+            @streams.users
+        }
         id={dom_id}
         class="w-full flex items-center [&>.user-icon]:hover:hidden [&>.cog-icon]:hover:block"
       >
@@ -95,8 +98,13 @@
           />
         </button>
         <p>{name}</p>
-        <Heroicons.icon name="check-circle" type="outline" class="text-blue-500 ml-1 h-5 w-5" />
-        <p class="ml-auto font-semibold">{5}</p>
+        <Heroicons.icon
+          :if={vote}
+          name="check-circle"
+          type="outline"
+          class="text-blue-500 ml-1 h-5 w-5"
+        />
+        <p class="ml-auto font-semibold">{vote}</p>
       </li>
     </ul>
     <details>

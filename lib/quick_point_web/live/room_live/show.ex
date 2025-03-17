@@ -4,6 +4,7 @@ defmodule QuickPointWeb.RoomLive.Show do
   alias QuickPoint.Rooms
   alias QuickPoint.Tickets
   alias QuickPoint.Tickets.Ticket
+  alias QuickPoint.Game.GameState
 
   on_mount {QuickPointWeb.UserAuth, :ensure_authenticated}
 
@@ -16,26 +17,26 @@ defmodule QuickPointWeb.RoomLive.Show do
       completed_tickets: completed_tickets
     } = Rooms.get_room_and_tickets!(id)
 
+    QuickPoint.Game.Supervisor.start_child(room.id)
+
     tickets = Tickets.filter(room, "not_started")
 
     current_user = socket.assigns.current_user
     roles = Rooms.list_or_create_roles(current_user, room)
 
-    socket = stream(socket, :presences, [])
+    %{users: users} = GameState.get_game_state(room.id)
 
-    socket =
-      if connected?(socket) do
-        QuickPointWeb.Presence.track_user(room.id, current_user.id, %{
-          id: current_user.id,
-          name: current_user.name,
-          roles: roles |> Enum.map(& &1.role)
-        })
+    if connected?(socket) do
+      QuickPointWeb.Presence.track_user(room.id, current_user.id, %{
+        id: current_user.id,
+        name: current_user.name,
+        roles: roles |> Enum.map(& &1.role)
+      })
 
-        QuickPointWeb.Presence.subscribe(room.id)
-        stream(socket, :presences, QuickPointWeb.Presence.list_online_users(room.id))
-      else
-        socket
-      end
+      Phoenix.PubSub.subscribe(QuickPoint.PubSub, "room:#{room.id}")
+    else
+      socket
+    end
 
     socket =
       socket
@@ -49,7 +50,8 @@ defmodule QuickPointWeb.RoomLive.Show do
       |> assign(:is_moderator, Enum.any?(roles, &(&1.role == :moderator)))
       |> assign(:is_player, Enum.any?(roles, &(&1.role == :player)))
       |> assign(:is_observer, Enum.any?(roles, &(&1.role == :observer)))
-      |> assign(:vote, "")
+      |> assign(:vote, Enum.find_value(users, nil, fn user -> user.id == current_user.id end))
+      |> stream(:users, users)
 
     {:ok, socket, temporary_assigns: [ticket: nil]}
   end
@@ -77,6 +79,7 @@ defmodule QuickPointWeb.RoomLive.Show do
 
   @impl true
   def handle_event("voted", %{"vote" => value}, socket) do
+    GameState.vote(socket.assigns.room.id, socket.assigns.current_user.id, value)
     {:noreply, assign(socket, :vote, value)}
   end
 
@@ -116,17 +119,23 @@ defmodule QuickPointWeb.RoomLive.Show do
   end
 
   @impl true
-  def handle_info({QuickPointWeb.Presence, {:join, presence}}, socket) do
-    {:noreply, stream_insert(socket, :presences, presence)}
+  def handle_info({GameState, {:vote, user, vote}}, socket) do
+    {:noreply, stream_insert(socket, :users, %{id: user.id, user: user, vote: vote})}
   end
 
   @impl true
-  def handle_info({QuickPointWeb.Presence, {:leave, presence}}, socket) do
-    if presence.metas == [] do
-      {:noreply, stream_delete(socket, :presences, presence)}
-    else
-      {:noreply, stream_insert(socket, :presences, presence)}
-    end
+  def handle_info({GameState, {:join, user, vote}}, socket) do
+    {:noreply,
+     stream_insert(socket, :users, %{
+       id: user.id,
+       user: user,
+       vote: vote
+     })}
+  end
+
+  @impl true
+  def handle_info({GameState, {:leave, user}}, socket) do
+    {:noreply, stream_delete(socket, :users, %{id: user.id})}
   end
 
   @impl true
