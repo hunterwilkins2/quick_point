@@ -50,7 +50,7 @@ defmodule QuickPointWeb.RoomLive.Show do
       |> assign(:is_moderator, Enum.any?(roles, &(&1.role == :moderator)))
       |> assign(:is_player, Enum.any?(roles, &(&1.role == :player)))
       |> assign(:is_observer, Enum.any?(roles, &(&1.role == :observer)))
-      |> assign(:vote, Enum.find_value(users, nil, fn user -> user.id == current_user.id end))
+      |> assign(:vote, Enum.find(users, nil, fn user -> user.id == current_user.id end))
       |> stream(:users, users)
 
     {:ok, socket, temporary_assigns: [ticket: nil]}
