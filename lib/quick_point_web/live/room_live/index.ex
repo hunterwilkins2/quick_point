@@ -43,7 +43,7 @@ defmodule QuickPointWeb.RoomLive.Index do
 
   @impl true
   def handle_info({QuickPointWeb.RoomLive.FormComponent, {:saved, room}}, socket) do
-    {:noreply, stream_insert(socket, :rooms, room)}
+    {:noreply, stream_insert(socket, :rooms_owned, room)}
   end
 
   @impl true
@@ -52,7 +52,7 @@ defmodule QuickPointWeb.RoomLive.Index do
 
     case Rooms.delete_room(socket.assigns.current_user, room) do
       {:ok, _} ->
-        {:noreply, stream_delete(socket, :rooms, room)}
+        {:noreply, stream_delete(socket, :rooms_owned, room)}
 
       {:error, :unauthorized_action} ->
         {:noreply,

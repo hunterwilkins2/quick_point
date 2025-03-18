@@ -53,6 +53,12 @@ defmodule QuickPointWeb.RoomLive.FormComponent do
       {:ok, room} ->
         notify_parent({:saved, room})
 
+        Phoenix.PubSub.broadcast!(
+          QuickPoint.PubSub,
+          "room:#{room.id}",
+          {__MODULE__, {:saved, room}}
+        )
+
         {:noreply,
          socket
          |> put_flash(:info, "Room updated successfully")

@@ -165,6 +165,11 @@ defmodule QuickPointWeb.RoomLive.Show do
     {:noreply, stream_insert(socket, :tickets, ticket)}
   end
 
+  @impl true
+  def handle_info({QuickPointWeb.RoomLive.FormComponent, {:saved, room}}, socket) do
+    {:noreply, assign(socket, :room, room)}
+  end
+
   defp update_counts(socket, :not_started, count) do
     socket
     |> assign(:active_tickets, socket.assigns.active_tickets + count)
