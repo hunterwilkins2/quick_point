@@ -25,7 +25,8 @@ defmodule QuickPointWeb.RoomLive.Show do
     current_user = socket.assigns.current_user
     roles = Rooms.list_or_create_roles(current_user, room)
 
-    %{users: users} = GameState.get_game_state(room.id)
+    %{users: users, total_votes: total_votes, total_players: total_players} =
+      GameState.get_game_state(room.id)
 
     if connected?(socket) do
       QuickPointWeb.Presence.track_user(room.id, current_user.id, %{
@@ -53,6 +54,8 @@ defmodule QuickPointWeb.RoomLive.Show do
       |> assign(:is_observer, Enum.any?(roles, &(&1.role == :observer)))
       |> assign(:vote, Enum.find(users, nil, fn user -> user.id == current_user.id end))
       |> stream(:users, users)
+      |> assign(:total_votes, total_votes)
+      |> assign(:total_players, total_players)
 
     {:ok, socket, temporary_assigns: [ticket: nil]}
   end
@@ -120,12 +123,15 @@ defmodule QuickPointWeb.RoomLive.Show do
   end
 
   @impl true
-  def handle_info({GameState, {:vote, user, vote}}, socket) do
-    {:noreply, stream_insert(socket, :users, %{id: user.id, user: user, vote: vote})}
+  def handle_info({GameState, {:vote, user, vote, total_votes}}, socket) do
+    {:noreply,
+     socket
+     |> stream_insert(:users, %{id: user.id, user: user, vote: vote})
+     |> assign(total_votes: total_votes)}
   end
 
   @impl true
-  def handle_info({GameState, {:join, user, vote}}, socket) do
+  def handle_info({GameState, {:join, user, vote, total_players, total_votes}}, socket) do
     socket =
       if user.id == socket.assigns.current_user.id do
         assign(socket, :vote, vote)
@@ -134,16 +140,19 @@ defmodule QuickPointWeb.RoomLive.Show do
       end
 
     {:noreply,
-     stream_insert(socket, :users, %{
-       id: user.id,
-       user: user,
-       vote: vote
-     })}
+     socket
+     |> stream_insert(:users, %{id: user.id, user: user, vote: vote})
+     |> assign(total_players: total_players)
+     |> assign(total_votes: total_votes)}
   end
 
   @impl true
-  def handle_info({GameState, {:leave, user}}, socket) do
-    {:noreply, stream_delete(socket, :users, %{id: user.id})}
+  def handle_info({GameState, {:leave, user, total_players, total_votes}}, socket) do
+    {:noreply,
+     socket
+     |> stream_delete(:users, %{id: user.id})
+     |> assign(total_players: total_players)
+     |> assign(total_votes: total_votes)}
   end
 
   @impl true

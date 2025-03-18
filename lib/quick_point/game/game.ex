@@ -26,30 +26,47 @@ defmodule QuickPoint.Game.GameState do
   def init(room_id) do
     Process.flag(:trap_exit, true)
     Logger.info("Started new GameState GenServer with state: #{room_id}", ansi_color: :yellow)
-    {:ok, %{room_id: room_id, users: %{}, votes: %{}, total_users: 0, total_votes: 0}}
+    {:ok, %{room_id: room_id, users: %{}, votes: %{}, total_players: 0, total_votes: 0}}
   end
 
   @impl true
   def handle_cast({:vote, user_id, value}, state) do
+    votes = Map.put(state.votes, user_id, value)
+    total_votes = count_votes(state.users, votes)
+
     if Map.has_key?(state.users, user_id) do
-      broadcast!(state.room_id, {:vote, Map.get(state.users, user_id), value})
+      broadcast!(
+        state.room_id,
+        {:vote, Map.get(state.users, user_id), value, total_votes}
+      )
     end
 
-    {:noreply, %{state | votes: Map.put(state.votes, user_id, value)}}
+    {:noreply, %{state | votes: votes}}
   end
 
   @impl true
   def handle_cast({:add_user, presence}, state) do
     users = Map.put(state.users, presence.id, presence.user)
-    broadcast!(state.room_id, {:join, presence.user, Map.get(state.votes, presence.user.id)})
-    {:noreply, %{state | users: users, total_users: Map.keys(users) |> Enum.count()}}
+    total_players = count_players(users)
+    total_votes = count_votes(users, state.votes)
+
+    broadcast!(
+      state.room_id,
+      {:join, presence.user, Map.get(state.votes, presence.user.id), total_players, total_votes}
+    )
+
+    {:noreply, %{state | users: users, total_players: total_players, total_votes: total_votes}}
   end
 
   @impl true
   def handle_cast({:remove_user, presence}, state) do
     users = Map.delete(state.users, presence.id)
-    broadcast!(state.room_id, {:leave, presence.user})
-    {:noreply, %{state | users: users, total_users: Map.keys(users) |> Enum.count()}}
+    total_players = count_players(users)
+    total_votes = count_votes(users, state.votes)
+
+    broadcast!(state.room_id, {:leave, presence.user, total_players, total_votes})
+
+    {:noreply, %{state | users: users, total_players: total_players, total_votes: total_votes}}
   end
 
   @impl true
@@ -58,7 +75,13 @@ defmodule QuickPoint.Game.GameState do
       state.users
       |> Enum.map(fn {key, user} -> %{id: key, user: user, vote: Map.get(state.votes, key)} end)
 
-    {:reply, %{users: users}, state}
+    reply = %{
+      users: users,
+      total_players: state.total_players,
+      total_votes: state.total_votes
+    }
+
+    {:reply, reply, state}
   end
 
   @impl true
@@ -69,6 +92,14 @@ defmodule QuickPoint.Game.GameState do
 
   defp broadcast!(room_id, msg) do
     Phoenix.PubSub.broadcast!(QuickPoint.PubSub, "room:#{room_id}", {__MODULE__, msg})
+  end
+
+  defp count_players(users) do
+    Enum.count(users)
+  end
+
+  defp count_votes(users, votes) do
+    Enum.count(votes, fn {user_id, _} -> Map.has_key?(users, user_id) end)
   end
 
   defp process_name(room_id) do

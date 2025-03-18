@@ -32,11 +32,11 @@ defmodule QuickPointWeb.Presence do
         presences,
         state
       ) do
-    Logger.info("Users in room #{room_id}: #{Map.keys(presences) |> Enum.count()}",
+    Logger.info("Users in room #{room_id}: #{Enum.count(presences)}",
       ansi_color: :yellow
     )
 
-    if Map.keys(presences) |> Enum.count() == 0 do
+    if Enum.count(presences) == 0 do
       QuickPoint.Game.Supervisor.stop(room_id)
     end
 
