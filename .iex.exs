@@ -5,4 +5,5 @@ alias QuickPoint.Accounts.User
 alias QuickPoint.Rooms
 alias QuickPoint.Rooms.Room
 alias QuickPoint.Rooms.Role
+alias QuickPoint.Tickets
 alias QuickPoint.Tickets.Ticket

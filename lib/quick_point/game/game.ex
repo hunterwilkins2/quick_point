@@ -2,6 +2,8 @@ defmodule QuickPoint.Game.GameState do
   use GenServer, restart: :transient
   require Logger
 
+  alias QuickPoint.Tickets
+
   def start_link(room_id) do
     GenServer.start_link(__MODULE__, room_id, name: process_name(room_id))
   end
@@ -26,7 +28,17 @@ defmodule QuickPoint.Game.GameState do
   def init(room_id) do
     Process.flag(:trap_exit, true)
     Logger.info("Started new GameState GenServer with state: #{room_id}", ansi_color: :yellow)
-    {:ok, %{room_id: room_id, users: %{}, votes: %{}, total_players: 0, total_votes: 0}}
+    active_ticket = Tickets.get_active(room_id)
+
+    {:ok,
+     %{
+       room_id: room_id,
+       active_ticket: active_ticket,
+       users: %{},
+       votes: %{},
+       total_players: 0,
+       total_votes: 0
+     }}
   end
 
   @impl true
@@ -76,6 +88,7 @@ defmodule QuickPoint.Game.GameState do
       |> Enum.map(fn {key, user} -> %{id: key, user: user, vote: Map.get(state.votes, key)} end)
 
     reply = %{
+      active_ticket: state.active_ticket,
       users: users,
       total_players: state.total_players,
       total_votes: state.total_votes

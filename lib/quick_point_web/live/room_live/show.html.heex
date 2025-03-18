@@ -7,6 +7,8 @@
 
 <div class="grid grid-cols-[8fr_4fr] gap-16 mt-8">
   <div>
+    <h1 :if={@active_ticket} class="w-full text-center text-xl mb-4">{@active_ticket.name}</h1>
+
     <.cards cards={~W"½ 1 2 3 5 8 13 21 ? ☕"} vote={@vote} />
 
     <.ticket_selector
@@ -48,9 +50,10 @@
     </.button>
   </div>
 
-  <div class="bg-neutral-200 h-min rounded-md shadow-md 
-    [&>*]:p-4 [&>*:not(:last-child)]:border-b [&>*:not(:last-child)]:border-stone-300
-  ">
+  <div class={[
+    "bg-neutral-200 h-min rounded-md shadow-md [&>*]:p-4 [&>*:not(:last-child)]:border-b [&>*:not(:last-child)]:border-stone-300",
+    @active_ticket != nil && "mt-11"
+  ]}>
     <p class="text-center font-semibold text-lg bg-blue-500 text-white rounded-t-md">
       Waiting on two players to vote
     </p>

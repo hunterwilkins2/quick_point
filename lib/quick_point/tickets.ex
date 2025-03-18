@@ -42,6 +42,16 @@ defmodule QuickPoint.Tickets do
   """
   def get_ticket!(id), do: Repo.get!(Ticket, id)
 
+  def get_active(room_id) do
+    query =
+      from Ticket,
+        where: [status: :not_started, room_id: ^room_id],
+        order_by: [asc: :updated_at],
+        limit: 1
+
+    Repo.one(query)
+  end
+
   def filter(room, "not_started") do
     query =
       from Ticket,

@@ -25,7 +25,12 @@ defmodule QuickPointWeb.RoomLive.Show do
     current_user = socket.assigns.current_user
     roles = Rooms.list_or_create_roles(current_user, room)
 
-    %{users: users, total_votes: total_votes, total_players: total_players} =
+    %{
+      active_ticket: active_ticket,
+      users: users,
+      total_votes: total_votes,
+      total_players: total_players
+    } =
       GameState.get_game_state(room.id)
 
     if connected?(socket) do
@@ -53,6 +58,7 @@ defmodule QuickPointWeb.RoomLive.Show do
       |> assign(:is_player, Enum.any?(roles, &(&1.role == :player)))
       |> assign(:is_observer, Enum.any?(roles, &(&1.role == :observer)))
       |> assign(:vote, Enum.find(users, nil, fn user -> user.id == current_user.id end))
+      |> assign(:active_ticket, active_ticket)
       |> stream(:users, users)
       |> assign(:total_votes, total_votes)
       |> assign(:total_players, total_players)
