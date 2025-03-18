@@ -1,5 +1,6 @@
 defmodule QuickPointWeb.RoomLive.Show do
   use QuickPointWeb, :live_view
+  require Logger
 
   alias QuickPoint.Rooms
   alias QuickPoint.Tickets
@@ -125,6 +126,13 @@ defmodule QuickPointWeb.RoomLive.Show do
 
   @impl true
   def handle_info({GameState, {:join, user, vote}}, socket) do
+    socket =
+      if user.id == socket.assigns.current_user.id do
+        assign(socket, :vote, vote)
+      else
+        socket
+      end
+
     {:noreply,
      stream_insert(socket, :users, %{
        id: user.id,
