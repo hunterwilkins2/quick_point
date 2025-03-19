@@ -99,10 +99,17 @@ defmodule QuickPointWeb.RoomLive.Show do
 
     case Tickets.delete_ticket(socket.assigns.current_user, socket.assigns.room, ticket) do
       {:ok, _} ->
-        {:noreply,
-         socket
-         |> stream_delete(:tickets, ticket)
-         |> update_counts(ticket.status, -1)}
+        GameState.update_active_ticket(socket.assigns.room.id)
+
+        filter = socket.assigns.form[:ticket_filter].value
+
+        Phoenix.PubSub.broadcast!(
+          QuickPoint.PubSub,
+          "room:#{socket.assigns.room.id}",
+          {__MODULE__, {:delete_one, filter, ticket}}
+        )
+
+        {:noreply, socket}
 
       {:error, :unauthorized_action} ->
         {:noreply,
@@ -121,10 +128,15 @@ defmodule QuickPointWeb.RoomLive.Show do
         {:noreply, put_flash(socket, :error, "Only moderators may preform that action")}
 
       {count, _} ->
-        {:noreply,
-         socket
-         |> stream(:tickets, [], reset: true)
-         |> update_counts(filter, -count)}
+        GameState.update_active_ticket(socket.assigns.room.id)
+
+        Phoenix.PubSub.broadcast!(
+          QuickPoint.PubSub,
+          "room:#{socket.assigns.room.id}",
+          {__MODULE__, {:delete_all, filter, count}}
+        )
+
+        {:noreply, socket}
     end
   end
 
@@ -162,7 +174,42 @@ defmodule QuickPointWeb.RoomLive.Show do
   end
 
   @impl true
+  def handle_info({GameState, {:update_state, state}}, socket) do
+    {:noreply,
+     socket
+     |> assign(:active_ticket, state.active_ticket)
+     |> assign(:total_players, state.total_players)
+     |> assign(:total_votes, state.total_votes)}
+  end
+
+  @impl true
   def handle_info({QuickPointWeb.TicketLive.FormComponent, {:saved, ticket}}, socket) do
+    GameState.update_active_ticket(socket.assigns.room.id)
+
+    Phoenix.PubSub.broadcast!(
+      QuickPoint.PubSub,
+      "room:#{socket.assigns.room.id}",
+      {__MODULE__, {:saved, ticket}}
+    )
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({QuickPointWeb.TicketLive.FormComponent, {:edited, ticket}}, socket) do
+    GameState.update_active_ticket(socket.assigns.room.id)
+
+    Phoenix.PubSub.broadcast!(
+      QuickPoint.PubSub,
+      "room:#{socket.assigns.room.id}",
+      {__MODULE__, {:edited, ticket}}
+    )
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({__MODULE__, {:saved, ticket}}, socket) do
     filter = socket.assigns.form[:ticket_filter].value
 
     socket =
@@ -175,9 +222,52 @@ defmodule QuickPointWeb.RoomLive.Show do
     {:noreply, update_counts(socket, :not_started, 1)}
   end
 
-  @impl true
-  def handle_info({QuickPointWeb.TicketLive.FormComponent, {:edited, ticket}}, socket) do
+  def handle_info({__MODULE__, {:edited, ticket}}, socket) do
     {:noreply, stream_insert(socket, :tickets, ticket)}
+  end
+
+  @impl true
+  def handle_info({__MODULE__, {:delete_one, deleted_from, ticket}}, socket) do
+    filter = socket.assigns.form[:ticket_filter].value
+
+    if filter == "total" or deleted_from == "total" or deleted_from == filter do
+      {:noreply,
+       socket
+       |> stream_delete(:tickets, ticket)
+       |> update_counts(ticket.status, -1)}
+    else
+      {:noreply, update_counts(socket, ticket.status, -1)}
+    end
+  end
+
+  @impl true
+  def handle_info({__MODULE__, {:delete_all, deleted_from, count}}, socket) do
+    filter = socket.assigns.form[:ticket_filter].value
+
+    cond do
+      deleted_from == "total" ->
+        {:noreply,
+         socket
+         |> stream(:tickets, [], reset: true)
+         |> update_counts(deleted_from, -count)}
+
+      filter == deleted_from ->
+        {:noreply,
+         socket
+         |> stream(:tickets, [], reset: true)
+         |> update_counts(filter, -count)}
+
+      filter == "total" ->
+        new_tickets = Tickets.filter(socket.assigns.room, "total")
+
+        {:noreply,
+         socket
+         |> stream(:tickets, new_tickets, reset: true)
+         |> update_counts(filter, -count)}
+
+      true ->
+        {:noreply, update_counts(socket, deleted_from, -count)}
+    end
   end
 
   @impl true

@@ -46,7 +46,7 @@ defmodule QuickPoint.Tickets do
     query =
       from Ticket,
         where: [status: :not_started, room_id: ^room_id],
-        order_by: [asc: :updated_at],
+        order_by: [asc: :id],
         limit: 1
 
     Repo.one(query)
@@ -56,7 +56,7 @@ defmodule QuickPoint.Tickets do
     query =
       from Ticket,
         where: [status: :not_started, room_id: ^room.id],
-        order_by: [asc: :updated_at]
+        order_by: [asc: :id]
 
     Repo.all(query)
   end

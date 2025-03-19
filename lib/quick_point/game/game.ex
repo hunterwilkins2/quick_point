@@ -24,6 +24,10 @@ defmodule QuickPoint.Game.GameState do
     GenServer.cast(process_name(room_id), {:vote, user_id, value})
   end
 
+  def update_active_ticket(room_id) do
+    GenServer.cast(process_name(room_id), {:update_active_ticket})
+  end
+
   @impl true
   def init(room_id) do
     Process.flag(:trap_exit, true)
@@ -82,6 +86,14 @@ defmodule QuickPoint.Game.GameState do
   end
 
   @impl true
+  def handle_cast({:update_active_ticket}, state) do
+    active_ticket = Tickets.get_active(state.room_id)
+    state = %{state | active_ticket: active_ticket}
+    broadcast_game_state!(state)
+    {:noreply, state}
+  end
+
+  @impl true
   def handle_call({:current_state}, _from, state) do
     users =
       state.users
@@ -105,6 +117,17 @@ defmodule QuickPoint.Game.GameState do
 
   defp broadcast!(room_id, msg) do
     Phoenix.PubSub.broadcast!(QuickPoint.PubSub, "room:#{room_id}", {__MODULE__, msg})
+  end
+
+  defp broadcast_game_state!(state) do
+    current_state = %{
+      active_ticket: state.active_ticket,
+      users: state.users,
+      total_players: state.total_players,
+      total_votes: state.total_votes
+    }
+
+    broadcast!(state.room_id, {:update_state, current_state})
   end
 
   defp count_players(users) do
