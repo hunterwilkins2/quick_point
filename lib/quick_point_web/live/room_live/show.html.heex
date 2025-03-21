@@ -5,9 +5,9 @@
   </:actions>
 </.header>
 
-<!--
 <div class="grid grid-cols-[8fr_4fr] gap-16 mt-8">
   <div>
+    <!--
     <h1 class="min-h-7 w-full text-center text-xl mb-4">
       {if @active_ticket do
         @active_ticket.name
@@ -15,13 +15,15 @@
         ""
       end}
     </h1>
+    -->
 
     <.cards
       cards={~W"½ 1 2 3 5 8 13 21 ? ☕"}
       vote={@vote}
-      can_vote={@game_status == :voting or @game_status == :show_results}
+      can_vote={@game_state == :voting or @game_state == :show_results}
     />
-
+    
+<!--
     <.ticket_selector
       room={@room}
       ticket_filter={@form[:ticket_filter].value}
@@ -30,7 +32,7 @@
       total_tickets={@total_tickets}
       is_moderator={@is_moderator}
     />
-
+    
     <.table id="tickets" rows={@streams.tickets}>
       <:col :let={{_id, ticket}} label="Name">{ticket.name}</:col>
       <:col :let={{_id, ticket}} label="Description">{ticket.description}</:col>
@@ -59,6 +61,7 @@
     >
       Delete All
     </.button>
+  -->
   </div>
 
   <div
@@ -66,6 +69,7 @@
     [&>*]:p-4 [&>*:not(:last-child)]:border-b [&>*:not(:last-child)]:border-stone-300"
     ,
   >
+    <!--
     <p class="text-center font-semibold text-lg bg-blue-500 text-white rounded-t-md">
       {case @game_status do
         :game_over ->
@@ -119,6 +123,7 @@
       <p class="text-2xl">Players:</p>
       <p class="text-xl">{@total_votes} / {@total_players}</p>
     </div>
+    -->
     <ul
       id="online_users"
       phx-update="stream"
@@ -156,7 +161,7 @@
           type="outline"
           class="text-blue-500 ml-1 h-5 w-5"
         />
-        <p :if={@game_status == :show_results} class="ml-auto font-semibold">{vote}</p>
+        <p :if={@game_state == :show_results} class="ml-auto font-semibold">{vote}</p>
       </li>
     </ul>
     <details>
@@ -166,6 +171,7 @@
   </div>
 </div>
 
+<!--
 <.modal
   :if={@live_action in [:new_ticket, :edit_ticket] and @is_moderator}
   id="ticket-modal"
