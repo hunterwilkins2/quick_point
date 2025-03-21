@@ -44,7 +44,7 @@ defmodule QuickPointWeb.Presence do
       user_data = %{id: user_id, user: presence.user, metas: Map.fetch!(presences, user_id)}
       msg = {__MODULE__, {:join, user_data}}
       Phoenix.PubSub.broadcast(QuickPoint.PubSub, "proxy:#{topic}", msg)
-      QuickPoint.Game.GameState.add_user(room_id, presence)
+      # QuickPoint.Game.GameState.add_user(room_id, presence)
     end
 
     for {user_id, presence} <- leaves do
@@ -57,7 +57,7 @@ defmodule QuickPointWeb.Presence do
       user_data = %{id: user_id, user: presence.user, metas: metas}
       msg = {__MODULE__, {:leave, user_data}}
       Phoenix.PubSub.broadcast(QuickPoint.PubSub, "proxy:#{topic}", msg)
-      QuickPoint.Game.GameState.remove_user(room_id, presence)
+      # QuickPoint.Game.GameState.remove_user(room_id, presence)
     end
 
     {:ok, state}
