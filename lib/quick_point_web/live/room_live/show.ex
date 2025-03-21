@@ -12,6 +12,10 @@ defmodule QuickPointWeb.RoomLive.Show do
     QuickPoint.Game.Supervisor.start_child(id)
     Phoenix.PubSub.subscribe(QuickPoint.PubSub, "room:#{id}")
 
+    if connected?(socket) do
+      GameState.add_player(self(), id, socket.assigns.current_user)
+    end
+
     state = GameState.current_state(id)
 
     {:ok, update_state(socket, state)}
@@ -23,19 +27,19 @@ defmodule QuickPointWeb.RoomLive.Show do
   end
 
   @impl true
-  def handle_info({GameState, new_state}, socket) do
-    {:noreply, update_state(socket, new_state)}
-  end
+  def handle_info({GameState, new_state}, socket), do: {:noreply, update_state(socket, new_state)}
 
   defp update_state(socket, %Game{} = state) do
     users =
       state.users
-      |> Enum.map(fn {id, user} -> %{id: id, user: user, vote: Map.get(state.votes, id)} end)
+      |> Enum.map(fn {_, user} ->
+        %{id: user.id, user: user, vote: Map.get(state.votes, user.id)}
+      end)
 
     socket
     |> assign(:room, state.room)
     |> assign(:vote, Map.get(state.votes, socket.assigns.current_user.id))
     |> assign(:game_state, state.state)
-    |> stream(:users, users)
+    |> stream(:users, users, reset: true)
   end
 end
