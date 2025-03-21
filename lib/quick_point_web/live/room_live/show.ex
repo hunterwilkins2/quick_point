@@ -26,6 +26,7 @@ defmodule QuickPointWeb.RoomLive.Show do
     roles = Rooms.list_or_create_roles(current_user, room)
 
     %{
+      game_status: game_status,
       active_ticket: active_ticket,
       users: users,
       total_votes: total_votes,
@@ -58,6 +59,7 @@ defmodule QuickPointWeb.RoomLive.Show do
       |> assign(:is_player, Enum.any?(roles, &(&1.role == :player)))
       |> assign(:is_observer, Enum.any?(roles, &(&1.role == :observer)))
       |> assign(:vote, Enum.find(users, nil, fn user -> user.id == current_user.id end))
+      |> assign(:game_status, game_status)
       |> assign(:active_ticket, active_ticket)
       |> stream(:users, users)
       |> assign(:total_votes, total_votes)
@@ -91,6 +93,12 @@ defmodule QuickPointWeb.RoomLive.Show do
   def handle_event("voted", %{"vote" => value}, socket) do
     GameState.vote(socket.assigns.room.id, socket.assigns.current_user.id, value)
     {:noreply, assign(socket, :vote, value)}
+  end
+
+  @impl true
+  def handle_event("next-story", _params, socket) do
+    GameState.next_ticket(socket.assigns.room.id)
+    {:noreply, socket}
   end
 
   @impl true
@@ -141,11 +149,12 @@ defmodule QuickPointWeb.RoomLive.Show do
   end
 
   @impl true
-  def handle_info({GameState, {:vote, user, vote, total_votes}}, socket) do
+  def handle_info({GameState, {:vote, user, vote, total_votes, game_status}}, socket) do
     {:noreply,
      socket
      |> stream_insert(:users, %{id: user.id, user: user, vote: vote})
-     |> assign(total_votes: total_votes)}
+     |> assign(total_votes: total_votes)
+     |> assign(game_status: game_status)}
   end
 
   @impl true
@@ -175,8 +184,23 @@ defmodule QuickPointWeb.RoomLive.Show do
 
   @impl true
   def handle_info({GameState, {:update_state, state}}, socket) do
+    socket =
+      if socket.assigns.active_ticket != state.active_ticket do
+        socket
+        |> assign(:active_tickets, socket.assigns.active_tickets - 1)
+        |> assign(:active_tickets, socket.assigns.completed_tickets + 1)
+
+        socket =
+          if socket.assigns.form[:ticket_filter].value == "not_started" do
+            stream_delete(socket, :tickets, state.active_ticket)
+          end
+
+        socket
+      end
+
     {:noreply,
      socket
+     |> assign(:game_status, state.game_status)
      |> assign(:active_ticket, state.active_ticket)
      |> assign(:total_players, state.total_players)
      |> assign(:total_votes, state.total_votes)}

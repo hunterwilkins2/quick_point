@@ -127,6 +127,12 @@ defmodule QuickPoint.Tickets do
     end
   end
 
+  def update_ticket(%Ticket{} = ticket, attrs) do
+    ticket
+    |> Ticket.changeset(attrs)
+    |> Repo.update()
+  end
+
   @doc """
   Deletes a ticket.
 

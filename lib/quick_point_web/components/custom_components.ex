@@ -6,23 +6,26 @@ defmodule QuickPointWeb.CustomComponents do
 
   attr :cards, :list, required: true
   attr :vote, :string, default: ""
+  attr :can_vote, :boolean, default: true
 
   def cards(assigns) do
     ~H"""
     <form phx-change="voted" class="flex gap-10 flex-wrap justify-evenly">
-      <.card :for={card <- @cards} value={card} is_checked={card == @vote} />
+      <.card :for={card <- @cards} value={card} is_checked={card == @vote} is_disabled={!@can_vote} />
     </form>
     """
   end
 
   attr :value, :string, required: true
   attr :is_checked, :boolean, default: false
+  attr :is_disabled, :boolean, default: false
 
   def card(assigns) do
     ~H"""
     <div class="[&_[type=radio]:checked+label]:bg-blue-500
                 [&_[type=radio]:checked+label]:text-white
                 [&_[type=radio]:checked+label]:border-blue-600
+                [&_[type=radio]:disabled+label]:cursor-not-allowed
                 [&_[type=radio]:checked+label>div:nth-child(2)]:border-white
     ">
       <input
@@ -31,6 +34,7 @@ defmodule QuickPointWeb.CustomComponents do
         value={@value}
         name="vote"
         checked={@is_checked}
+        disabled={@is_disabled}
         class="hidden"
       />
       <label
