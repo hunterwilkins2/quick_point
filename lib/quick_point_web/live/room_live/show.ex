@@ -30,25 +30,25 @@ defmodule QuickPointWeb.RoomLive.Show do
   end
 
   @impl true
-  def handle_event("clear-votes", _parmas, socket) do
+  def handle_event("clear-votes", _params, socket) do
     GameState.clear_votes(socket.assigns.room.id)
     {:noreply, socket}
   end
 
   @impl true
-  def handle_event("end-voting", _parmas, socket) do
+  def handle_event("end-voting", _params, socket) do
     GameState.end_voting(socket.assigns.room.id)
     {:noreply, socket}
   end
 
   @impl true
-  def handle_event("skip-ticket", _parmas, socket) do
+  def handle_event("skip-ticket", _params, socket) do
     GameState.skip_ticket(socket.assigns.room.id)
     {:noreply, socket}
   end
 
   @impl true
-  def handle_event("next-ticket", _parmas, socket) do
+  def handle_event("next-ticket", _params, socket) do
     GameState.next_ticket(socket.assigns.room.id)
     {:noreply, socket}
   end
