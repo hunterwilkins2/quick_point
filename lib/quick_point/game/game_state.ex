@@ -73,7 +73,7 @@ defmodule QuickPoint.Game.GameState do
     state =
       state
       |> Map.replace!(:votes, votes)
-      |> Map.replace!(:total_votes, count_votes(state.users, votes))
+      |> count_votes()
       |> get_state()
 
     broadcast_state!(state)
@@ -162,12 +162,11 @@ defmodule QuickPoint.Game.GameState do
   end
 
   defp count_votes(state) do
-    %Game{state | total_votes: count_votes(state.users, state.votes)}
-  end
-
-  defp count_votes(users, votes) do
-    users
-    |> Enum.count(fn {_, user} -> Map.has_key?(votes, user.id) end)
+    %Game{
+      state
+      | total_votes:
+          state.users |> Enum.count(fn {_, user} -> Map.has_key?(state.votes, user.id) end)
+    }
   end
 
   defp get_state(%Game{state: :voting, total_users: users, total_votes: votes} = state)
