@@ -57,6 +57,7 @@ defmodule QuickPoint.Game.GameState do
       state
       |> Map.replace!(:users, Map.put(state.users, pid, user))
       |> Map.replace!(:total_users, state.total_users + 1)
+      |> count_votes()
 
     broadcast_state!(state)
 
@@ -135,6 +136,7 @@ defmodule QuickPoint.Game.GameState do
       state
       |> Map.replace!(:users, Map.delete(state.users, pid))
       |> Map.replace!(:total_users, state.total_users - 1)
+      |> count_votes()
       |> get_state()
 
     broadcast_state!(state)
@@ -157,6 +159,10 @@ defmodule QuickPoint.Game.GameState do
 
   defp broadcast_state!(state) do
     Phoenix.PubSub.broadcast!(QuickPoint.PubSub, "room:#{state.room.id}", {__MODULE__, state})
+  end
+
+  defp count_votes(state) do
+    %Game{state | total_votes: count_votes(state.users, state.votes)}
   end
 
   defp count_votes(users, votes) do
