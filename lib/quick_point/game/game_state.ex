@@ -17,6 +17,9 @@ defmodule QuickPoint.Game.GameState do
 
   def update_room(%Room{} = room), do: GenServer.cast(process_name(room.id), {:update_room, room})
 
+  def vote(room_id, user, vote),
+    do: GenServer.cast(process_name(room_id), {:vote, user, vote})
+
   @impl true
   def init(room_id) do
     Process.flag(:trap_exit, true)
@@ -24,7 +27,7 @@ defmodule QuickPoint.Game.GameState do
 
     room = Rooms.get_room!(room_id)
 
-    {:ok, %Game{room: room}}
+    {:ok, %Game{room: room, state: :voting}}
   end
 
   @impl true
@@ -42,11 +45,27 @@ defmodule QuickPoint.Game.GameState do
     Logger.debug("Added #{user.name} to #{state.room.id} from #{inspect(pid)}", ansi_color: :blue)
     Process.monitor(pid)
 
-    state = %Game{
+    state =
       state
-      | users: Map.put(state.users, pid, user),
-        total_users: state.total_users + 1
-    }
+      |> Map.replace!(:users, Map.put(state.users, pid, user))
+      |> Map.replace!(:total_users, state.total_users + 1)
+
+    broadcast_state!(state)
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:vote, user, vote}, %Game{} = state) do
+    Logger.debug("#{user.name} in #{state.room.id} voted #{vote}", ansi_color: :blue)
+
+    votes = Map.put(state.votes, user.id, vote)
+
+    state =
+      state
+      |> Map.replace!(:votes, votes)
+      |> Map.replace!(:total_votes, count_votes(state.users, votes))
+      |> get_state()
 
     broadcast_state!(state)
 
@@ -64,7 +83,12 @@ defmodule QuickPoint.Game.GameState do
       ansi_color: :blue
     )
 
-    state = %Game{state | users: Map.delete(state.users, pid), total_users: state.total_users - 1}
+    state =
+      state
+      |> Map.replace!(:users, Map.delete(state.users, pid))
+      |> Map.replace!(:total_users, state.total_users - 1)
+      |> get_state()
+
     broadcast_state!(state)
 
     if Enum.count(state.users) == 0 do
@@ -75,8 +99,7 @@ defmodule QuickPoint.Game.GameState do
     {:noreply, state}
   end
 
-  @impl true
-  def handle_info(_msg, state), do: {:noreply, state}
+  def handle_info({:EXIT, _from, reason}, state), do: {:stop, reason, state}
 
   @impl true
   def terminate(_reason, state) do
@@ -87,6 +110,20 @@ defmodule QuickPoint.Game.GameState do
   defp broadcast_state!(state) do
     Phoenix.PubSub.broadcast!(QuickPoint.PubSub, "room:#{state.room.id}", {__MODULE__, state})
   end
+
+  defp count_votes(users, votes) do
+    users
+    |> Enum.count(fn {_, user} -> Map.has_key?(votes, user.id) end)
+  end
+
+  defp get_state(%Game{state: :voting, total_users: users, total_votes: votes} = state)
+       when users == votes do
+    %Game{state | state: :show_results}
+  end
+
+  defp get_state(%Game{state: :voting} = state), do: state
+
+  defp get_state(%Game{state: :show_results} = state), do: state
 
   defp process_name(room_id), do: {:via, Registry, {GameRegistry, room_id}}
 end

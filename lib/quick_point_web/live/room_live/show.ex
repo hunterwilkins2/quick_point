@@ -23,7 +23,8 @@ defmodule QuickPointWeb.RoomLive.Show do
 
   @impl true
   def handle_event("voted", %{"vote" => vote}, socket) do
-    {:noreply, assign(socket, :vote, vote)}
+    GameState.vote(socket.assigns.room.id, socket.assigns.current_user, vote)
+    {:noreply, socket}
   end
 
   @impl true
@@ -41,5 +42,7 @@ defmodule QuickPointWeb.RoomLive.Show do
     |> assign(:vote, Map.get(state.votes, socket.assigns.current_user.id))
     |> assign(:game_state, state.state)
     |> stream(:users, users, reset: true)
+    |> assign(:total_users, state.total_users)
+    |> assign(:total_votes, state.total_votes)
   end
 end
