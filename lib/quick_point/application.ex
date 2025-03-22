@@ -16,7 +16,6 @@ defmodule QuickPoint.Application do
       # {QuickPoint.Worker, arg},
       # Start to serve requests, typically the last entry
       QuickPointWeb.Endpoint,
-      QuickPointWeb.Presence,
       {Registry, keys: :unique, name: GameRegistry},
       QuickPoint.Game.Supervisor
     ]
