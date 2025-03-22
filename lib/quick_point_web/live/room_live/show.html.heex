@@ -7,7 +7,6 @@
 
 <div class="grid grid-cols-[8fr_4fr] gap-16 mt-8">
   <div>
-    <!--
     <h1 class="min-h-7 w-full text-center text-xl mb-4">
       {if @active_ticket do
         @active_ticket.name
@@ -15,28 +14,26 @@
         ""
       end}
     </h1>
-    -->
 
     <.cards
       cards={~W"½ 1 2 3 5 8 13 21 ? ☕"}
       vote={@vote}
       can_vote={@game_state == :voting or @game_state == :show_results}
     />
-    
-<!--
+
     <.ticket_selector
       room={@room}
-      ticket_filter={@form[:ticket_filter].value}
-      active_tickets={@active_tickets}
-      completed_tickets={@completed_tickets}
+      ticket_filter={@ticket_filter}
+      active_tickets={@total_tickets_not_started}
+      completed_tickets={@total_tickets_completed}
       total_tickets={@total_tickets}
       is_moderator={@is_moderator}
     />
-    
+
     <.table id="tickets" rows={@streams.tickets}>
       <:col :let={{_id, ticket}} label="Name">{ticket.name}</:col>
       <:col :let={{_id, ticket}} label="Description">{ticket.description}</:col>
-      <:col :let={{_id, ticket}} :if={@form[:ticket_filter].value != "not_started"} label="Effort">
+      <:col :let={{_id, ticket}} :if={@ticket_filter != "not_started"} label="Effort">
         {ticket.effort}
       </:col>
 
@@ -61,7 +58,6 @@
     >
       Delete All
     </.button>
-  -->
   </div>
 
   <div class="mt-11 bg-neutral-200 h-min rounded-md shadow-md 

@@ -20,8 +20,14 @@ defmodule QuickPoint.Tickets do
       [%Ticket{}, ...]
 
   """
-  def list_tickets(room) do
+  def list_tickets(%Room{} = room) do
     query = from t in Ticket, where: t.room_id == ^room.id
+
+    Repo.all(query)
+  end
+
+  def list_tickets(room_id) do
+    query = from t in Ticket, where: t.room_id == ^room_id
 
     Repo.all(query)
   end

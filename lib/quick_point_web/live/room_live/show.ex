@@ -18,9 +18,13 @@ defmodule QuickPointWeb.RoomLive.Show do
 
     state = GameState.current_state(id)
 
-    {:ok,
-     update_state(socket, state)
-     |> assign(is_moderator: true)}
+    socket =
+      socket
+      |> assign(is_moderator: true)
+      |> assign(ticket_filter: "not_started")
+      |> update_state(state)
+
+    {:ok, socket}
   end
 
   @impl true
@@ -54,6 +58,12 @@ defmodule QuickPointWeb.RoomLive.Show do
   end
 
   @impl true
+  def handle_event("filter", %{"ticket_filter" => filter}, socket) do
+    state = GameState.current_state(socket.assigns.room.id)
+    {:noreply, socket |> assign(ticket_filter: filter) |> update_state(state)}
+  end
+
+  @impl true
   def handle_info({GameState, new_state}, socket), do: {:noreply, update_state(socket, new_state)}
 
   defp update_state(socket, %Game{} = state) do
@@ -70,5 +80,17 @@ defmodule QuickPointWeb.RoomLive.Show do
     |> stream(:users, users, reset: true)
     |> assign(:total_users, state.total_users)
     |> assign(:total_votes, state.total_votes)
+    |> assign(:active_ticket, state.active_ticket)
+    |> stream(:tickets, filter_tickets(state.tickets, socket.assigns.ticket_filter), reset: true)
+    |> assign(:total_tickets_not_started, state.total_tickets_not_started)
+    |> assign(:total_tickets_completed, state.total_tickets_completed)
+    |> assign(:total_tickets, state.total_tickets)
   end
+
+  defp filter_tickets(tickets, "total"), do: tickets
+
+  defp filter_tickets(tickets, "not_started"),
+    do: Enum.filter(tickets, &(&1.status == :not_started))
+
+  defp filter_tickets(tickets, "completed"), do: Enum.filter(tickets, &(&1.status == :completed))
 end

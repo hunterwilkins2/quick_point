@@ -5,6 +5,7 @@ defmodule QuickPoint.Game.GameState do
   alias QuickPoint.Game.Game
   alias QuickPoint.Rooms
   alias QuickPoint.Rooms.Room
+  alias QuickPoint.Tickets
 
   def start_link(room_id) do
     GenServer.start_link(__MODULE__, room_id, name: process_name(room_id))
@@ -30,12 +31,23 @@ defmodule QuickPoint.Game.GameState do
 
   @impl true
   def init(room_id) do
-    Process.flag(:trap_exit, true)
+    # Process.flag(:trap_exit, true)
     Logger.info("Started new GameState GenServer with state: #{room_id}", ansi_color: :yellow)
 
-    room = Rooms.get_room!(room_id)
+    tasks = [
+      Task.async(fn -> Rooms.get_room!(room_id) end),
+      Task.async(fn -> Tickets.list_tickets(room_id) end)
+    ]
 
-    {:ok, %Game{room: room, state: :voting}}
+    [room, tickets] = Task.await_many(tasks)
+
+    state =
+      %Game{room: room, tickets: tickets}
+      |> count_tickets()
+      |> set_active_ticket()
+      |> get_state()
+
+    {:ok, state}
   end
 
   @impl true
@@ -112,6 +124,16 @@ defmodule QuickPoint.Game.GameState do
   end
 
   @impl true
+  def handle_cast(:next_ticket, %Game{state: :waiting_to_start} = state) do
+    Logger.debug("Starting game in #{state.room.id}", ansi_color: :blue)
+
+    state = %Game{state | state: :voting, votes: %{}, total_votes: 0}
+    broadcast_state!(state)
+
+    {:noreply, state}
+  end
+
+  @impl true
   def handle_cast(:next_ticket, %Game{} = state) do
     Logger.debug("Moving to next ticket in #{state.room.id}", ansi_color: :blue)
 
@@ -169,14 +191,37 @@ defmodule QuickPoint.Game.GameState do
     }
   end
 
+  defp count_tickets(%Game{} = state) do
+    frequences = Enum.frequencies_by(state.tickets, & &1.status)
+
+    %Game{
+      state
+      | total_tickets: Enum.count(state.tickets),
+        total_tickets_not_started: frequences[:not_started],
+        total_tickets_completed: frequences[:completed]
+    }
+  end
+
+  defp get_state(%Game{state: :game_over, active_ticket: nil} = state), do: state
+
+  defp get_state(%Game{state: :game_over, active_ticket: _ticket_} = state) do
+    %Game{state | state: :waiting_to_start}
+  end
+
   defp get_state(%Game{state: :voting, total_users: users, total_votes: votes} = state)
        when users == votes do
     %Game{state | state: :show_results}
   end
 
+  defp get_state(%Game{state: :waiting_to_start} = state), do: state
+
   defp get_state(%Game{state: :voting} = state), do: state
 
   defp get_state(%Game{state: :show_results} = state), do: state
+
+  defp set_active_ticket(%Game{} = state) do
+    %Game{state | active_ticket: Enum.find(state.tickets, &(&1.status == :not_started))}
+  end
 
   defp process_name(room_id), do: {:via, Registry, {GameRegistry, room_id}}
 end
