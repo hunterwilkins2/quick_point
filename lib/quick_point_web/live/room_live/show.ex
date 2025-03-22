@@ -4,6 +4,8 @@ defmodule QuickPointWeb.RoomLive.Show do
 
   alias QuickPoint.Game.GameState
   alias QuickPoint.Game.Game
+  alias QuickPoint.Tickets
+  alias QuickPoint.Tickets.Ticket
 
   on_mount {QuickPointWeb.UserAuth, :ensure_authenticated}
 
@@ -25,6 +27,29 @@ defmodule QuickPointWeb.RoomLive.Show do
       |> update_state(state)
 
     {:ok, socket}
+  end
+
+  @impl true
+  def handle_params(params, _url, socket) do
+    {:noreply, apply_action(socket, socket.assigns.live_action, params)}
+  end
+
+  defp apply_action(socket, :edit_ticket, %{"ticket_id" => id}) do
+    socket
+    |> assign(:page_title, "Edit Ticket")
+    |> assign(:ticket, Tickets.get_ticket!(id))
+  end
+
+  defp apply_action(socket, :new_ticket, _params) do
+    socket
+    |> assign(:page_title, "New Ticket")
+    |> assign(:ticket, %Ticket{})
+  end
+
+  defp apply_action(socket, :show, _params) do
+    socket
+    |> assign(:page_title, socket.assigns.room.name)
+    |> assign(:ticket, nil)
   end
 
   @impl true

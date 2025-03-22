@@ -6,6 +6,7 @@ defmodule QuickPoint.Game.GameState do
   alias QuickPoint.Rooms
   alias QuickPoint.Rooms.Room
   alias QuickPoint.Tickets
+  alias QuickPoint.Tickets.Ticket
 
   def start_link(room_id) do
     GenServer.start_link(__MODULE__, room_id, name: process_name(room_id))
@@ -28,6 +29,12 @@ defmodule QuickPoint.Game.GameState do
   def skip_ticket(room_id), do: GenServer.cast(process_name(room_id), :skip_ticket)
 
   def next_ticket(room_id), do: GenServer.cast(process_name(room_id), :next_ticket)
+
+  def add_ticket(room_id, ticket),
+    do: GenServer.cast(process_name(room_id), {:add_ticket, ticket})
+
+  def edit_ticket(room_id, ticket),
+    do: GenServer.cast(process_name(room_id), {:edit_ticket, ticket})
 
   @impl true
   def init(room_id) do
@@ -138,6 +145,40 @@ defmodule QuickPoint.Game.GameState do
     Logger.debug("Moving to next ticket in #{state.room.id}", ansi_color: :blue)
 
     state = %Game{state | state: :voting, votes: %{}, total_votes: 0}
+    broadcast_state!(state)
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:add_ticket, %Ticket{} = ticket}, %Game{} = state) do
+    Logger.debug("Added new ticket #{ticket.name} in #{state.room.id}", ansi_color: :blue)
+
+    state =
+      %Game{
+        state
+        | tickets: Enum.concat(state.tickets, [ticket]),
+          total_tickets_not_started: state.total_tickets_not_started + 1,
+          total_tickets: state.total_tickets + 1
+      }
+      |> set_active_ticket()
+      |> get_state()
+
+    broadcast_state!(state)
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:edit_ticket, %Ticket{} = ticket}, %Game{} = state) do
+    Logger.debug("Edited ticket #{ticket.name} in #{state.room.id}", ansi_color: :blue)
+
+    index = Enum.find_index(state.tickets, &(&1.id == ticket.id))
+
+    state =
+      %Game{state | tickets: List.replace_at(state.tickets, index, ticket)}
+      |> set_active_ticket()
+
     broadcast_state!(state)
 
     {:noreply, state}

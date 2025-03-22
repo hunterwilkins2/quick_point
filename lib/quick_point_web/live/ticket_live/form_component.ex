@@ -2,6 +2,7 @@ defmodule QuickPointWeb.TicketLive.FormComponent do
   use QuickPointWeb, :live_component
 
   alias QuickPoint.Tickets
+  alias QuickPoint.Game.GameState
 
   @impl true
   def render(assigns) do
@@ -58,7 +59,7 @@ defmodule QuickPointWeb.TicketLive.FormComponent do
            ticket_params
          ) do
       {:ok, ticket} ->
-        notify_parent({:edited, ticket})
+        GameState.edit_ticket(socket.assigns.room.id, ticket)
 
         {:noreply,
          socket
@@ -79,7 +80,7 @@ defmodule QuickPointWeb.TicketLive.FormComponent do
   defp save_ticket(socket, :new_ticket, ticket_params) do
     case Tickets.create_ticket(socket.assigns.current_user, socket.assigns.room, ticket_params) do
       {:ok, ticket} ->
-        notify_parent({:saved, ticket})
+        GameState.add_ticket(socket.assigns.room.id, ticket)
 
         {:noreply,
          socket
@@ -96,6 +97,4 @@ defmodule QuickPointWeb.TicketLive.FormComponent do
          |> push_patch(to: socket.assigns.patch)}
     end
   end
-
-  defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
 end
