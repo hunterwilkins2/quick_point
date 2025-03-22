@@ -64,14 +64,10 @@
   -->
   </div>
 
-  <div
-    class="mt-11 bg-neutral-200 h-min rounded-md shadow-md 
-    [&>*]:p-4 [&>*:not(:last-child)]:border-b [&>*:not(:last-child)]:border-stone-300"
-    ,
-  >
-    <!--
+  <div class="mt-11 bg-neutral-200 h-min rounded-md shadow-md 
+    [&>*]:p-4 [&>*:not(:last-child)]:border-b [&>*:not(:last-child)]:border-stone-300">
     <p class="text-center font-semibold text-lg bg-blue-500 text-white rounded-t-md">
-      {case @game_status do
+      {case @game_state do
         :game_over ->
           "Add tickets to get started"
 
@@ -79,15 +75,16 @@
           "Ready to start voting"
 
         :voting ->
-          "Waiting on #{@total_players - @total_votes} players"
+          "Waiting on #{@total_users - @total_votes} players"
 
         :show_results ->
           "Finished voting"
       end}
     </p>
-    <div :if={@is_moderator and @game_status != :game_over} class="grid grid-cols-2 gap-4">
+    <div :if={@is_moderator and @game_state != :game_over} class="grid grid-cols-2 gap-4">
       <.button
-        :if={@game_status != :waiting_to_start}
+        :if={@game_state != :waiting_to_start}
+        phx-click="clear-votes"
         class="!bg-transparent !text-blue-500 outline outline-1 outline-blue-500 rounded-md 
         hover:outline-2 hover:outline-blue-600 hover:bg-transparent
       "
@@ -95,7 +92,8 @@
         Clear Votes
       </.button>
       <.button
-        :if={@game_status != :waiting_to_start}
+        :if={@game_state != :waiting_to_start}
+        phx-click="end-voting"
         class="!bg-transparent !text-blue-500 outline outline-1 outline-blue-500 rounded-md 
         hover:outline-2 hover:outline-blue-600 hover:bg-transparent
       "
@@ -103,23 +101,23 @@
         End Voting
       </.button>
       <.button
-        :if={@game_status != :waiting_to_start}
+        :if={@game_state != :waiting_to_start}
+        phx-click="skip-ticket"
         class="!bg-transparent !text-blue-500 outline outline-1 outline-blue-500 rounded-md 
         hover:outline-2 hover:outline-blue-600 hover:bg-transparent
       "
       >
-        Skip Story
+        Skip Ticket
       </.button>
       <.button
-        phx-click="next-story"
+        phx-click="next-ticket"
         class="!bg-transparent !text-blue-500 outline outline-1 outline-blue-500 rounded-md
         hover:outline-2 hover:outline-blue-600 hover:bg-transparent
       "
       >
-        Next Story
+        Next Ticket
       </.button>
     </div>
-    -->
     <div class="flex justify-between items-center">
       <p class="text-2xl">Players:</p>
       <p class="text-xl">{@total_votes} / {@total_users}</p>

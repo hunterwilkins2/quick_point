@@ -18,12 +18,38 @@ defmodule QuickPointWeb.RoomLive.Show do
 
     state = GameState.current_state(id)
 
-    {:ok, update_state(socket, state)}
+    {:ok,
+     update_state(socket, state)
+     |> assign(is_moderator: true)}
   end
 
   @impl true
   def handle_event("voted", %{"vote" => vote}, socket) do
     GameState.vote(socket.assigns.room.id, socket.assigns.current_user, vote)
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("clear-votes", _parmas, socket) do
+    GameState.clear_votes(socket.assigns.room.id)
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("end-voting", _parmas, socket) do
+    GameState.end_voting(socket.assigns.room.id)
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("skip-ticket", _parmas, socket) do
+    GameState.skip_ticket(socket.assigns.room.id)
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("next-ticket", _parmas, socket) do
+    GameState.next_ticket(socket.assigns.room.id)
     {:noreply, socket}
   end
 

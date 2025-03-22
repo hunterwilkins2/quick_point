@@ -20,6 +20,14 @@ defmodule QuickPoint.Game.GameState do
   def vote(room_id, user, vote),
     do: GenServer.cast(process_name(room_id), {:vote, user, vote})
 
+  def clear_votes(room_id), do: GenServer.cast(process_name(room_id), :clear_votes)
+
+  def end_voting(room_id), do: GenServer.cast(process_name(room_id), :end_voting)
+
+  def skip_ticket(room_id), do: GenServer.cast(process_name(room_id), :skip_ticket)
+
+  def next_ticket(room_id), do: GenServer.cast(process_name(room_id), :next_ticket)
+
   @impl true
   def init(room_id) do
     Process.flag(:trap_exit, true)
@@ -67,6 +75,46 @@ defmodule QuickPoint.Game.GameState do
       |> Map.replace!(:total_votes, count_votes(state.users, votes))
       |> get_state()
 
+    broadcast_state!(state)
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast(:clear_votes, %Game{} = state) do
+    Logger.debug("Clearing votes in #{state.room.id}", ansi_color: :blue)
+
+    state = %Game{state | state: :voting, votes: %{}, total_votes: 0}
+    broadcast_state!(state)
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast(:end_voting, %Game{} = state) do
+    Logger.debug("Voting manually ended in #{state.room.id}", ansi_color: :blue)
+
+    state = %Game{state | state: :show_results}
+    broadcast_state!(state)
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast(:skip_ticket, %Game{} = state) do
+    Logger.debug("Skipping ticket in #{state.room.id}", ansi_color: :blue)
+
+    state = %Game{state | state: :voting, votes: %{}, total_votes: 0}
+    broadcast_state!(state)
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast(:next_ticket, %Game{} = state) do
+    Logger.debug("Moving to next ticket in #{state.room.id}", ansi_color: :blue)
+
+    state = %Game{state | state: :voting, votes: %{}, total_votes: 0}
     broadcast_state!(state)
 
     {:noreply, state}
