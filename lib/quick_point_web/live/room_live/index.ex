@@ -15,7 +15,8 @@ defmodule QuickPointWeb.RoomLive.Index do
      socket
      |> stream(:rooms_owned, rooms_owned)
      |> stream(:rooms_visited, rooms_visited)
-     |> assign(:has_visited_room, Enum.count(rooms_visited) > 0)}
+     |> assign(:has_visited_room, Enum.count(rooms_visited) > 0)
+     |> assign(:has_owned_room, Enum.count(rooms_owned) > 0)}
   end
 
   @impl true

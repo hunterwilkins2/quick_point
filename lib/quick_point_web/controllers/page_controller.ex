@@ -1,9 +1,12 @@
 defmodule QuickPointWeb.PageController do
   use QuickPointWeb, :controller
 
-  def home(conn, _params) do
-    # The home page is often custom made,
-    # so skip the default app layout.
-    render(conn, :home, layout: false)
+  def home(%{assigns: %{current_user: nil}} = conn, _params) do
+    IO.inspect(conn.assigns)
+    redirect(conn, to: ~p"/users/log_in")
+  end
+
+  def home(%{assigns: %{current_user: _user}} = conn, _params) do
+    redirect(conn, to: ~p"/rooms")
   end
 end

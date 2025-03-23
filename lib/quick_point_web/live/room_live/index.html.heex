@@ -2,45 +2,57 @@
   Listing Rooms
   <:actions>
     <.link patch={~p"/rooms/new"}>
-      <.button>New Room</.button>
+      <.button class="!bg-purple-500 text-white">New Room</.button>
     </.link>
   </:actions>
 </.header>
 
 <h1 class="text-md font-semibold leading-8 text-zinc-800 mt-8 mb-[-1.5rem]">Your Rooms</h1>
-<.table
-  id="rooms"
-  rows={@streams.rooms_owned}
-  row_click={fn {_id, room} -> JS.navigate(~p"/rooms/#{room}") end}
->
-  <:col :let={{_id, room}} label="Name">{room.name}</:col>
-  <:col :let={{_id, room}} label="ID">{room.id}</:col>
-  <:action :let={{_id, room}}>
-    <div class="sr-only">
-      <.link navigate={~p"/rooms/#{room}"}>Show</.link>
-    </div>
-    <.link patch={~p"/rooms/#{room}/edit"}>Edit</.link>
-  </:action>
-  <:action :let={{id, room}}>
-    <.link
-      phx-click={JS.push("delete", value: %{id: room.id}) |> hide("##{id}")}
-      data-confirm="Are you sure?"
-    >
-      Delete
-    </.link>
-  </:action>
-</.table>
+<%= if @has_owned_room do %>
+  <.table
+    id="rooms"
+    rows={@streams.rooms_owned}
+    row_click={fn {_id, room} -> JS.navigate(~p"/rooms/#{room}") end}
+  >
+    <:col :let={{_id, room}} label="Name">{room.name}</:col>
+    <:col :let={{_id, room}} label="ID">{room.id}</:col>
+    <:action :let={{_id, room}}>
+      <div class="sr-only">
+        <.link navigate={~p"/rooms/#{room}"}>Show</.link>
+      </div>
+      <.link patch={~p"/rooms/#{room}/edit"}>Edit</.link>
+    </:action>
+    <:action :let={{id, room}}>
+      <.link
+        phx-click={JS.push("delete", value: %{id: room.id}) |> hide("##{id}")}
+        data-confirm="Are you sure?"
+      >
+        Delete
+      </.link>
+    </:action>
+  </.table>
+<% else %>
+  <div class="mt-11 w-full text-center">
+    <p>No rooms to show...</p>
+    <p>Create a room to get started.</p>
+  </div>
+<% end %>
 
-<h1 class="text-md font-semibold leading-8 text-zinc-800 mt-8 mb-[-1.5rem]">Visted Rooms</h1>
-<.table
-  :if={@has_visited_room}
-  id="visited-rooms"
-  rows={@streams.rooms_visited}
-  row_click={fn {_id, room} -> JS.navigate(~p"/rooms/#{room}") end}
->
-  <:col :let={{_id, room}} label="Name">{room.name}</:col>
-  <:col :let={{_id, room}} label="ID">{room.id}</:col>
-</.table>
+<h1 class="text-md font-semibold leading-8 text-zinc-800 mt-16 mb-[-1.5rem]">Visted Rooms</h1>
+<%= if @has_visited_room do %>
+  <.table
+    id="visited-rooms"
+    rows={@streams.rooms_visited}
+    row_click={fn {_id, room} -> JS.navigate(~p"/rooms/#{room}") end}
+  >
+    <:col :let={{_id, room}} label="Name">{room.name}</:col>
+    <:col :let={{_id, room}} label="ID">{room.id}</:col>
+  </.table>
+<% else %>
+  <div class="mt-11 w-full text-center">
+    <p>No rooms to show...</p>
+  </div>
+<% end %>
 
 <.modal :if={@live_action in [:new, :edit]} id="room-modal" show on_cancel={JS.patch(~p"/rooms")}>
   <.live_component
@@ -53,6 +65,3 @@
     current_user={@current_user}
   />
 </.modal>
-<div :if={!@has_visited_room} class="mt-11 w-full text-center">
-  <p>No rooms to show...</p>
-</div>
