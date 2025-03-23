@@ -77,18 +77,23 @@
           "Finished voting"
       end}
     </p>
-    <div :if={@is_moderator and @game_state != :game_over} class="grid grid-cols-2 gap-4">
+    <div
+      :if={@is_moderator and @game_state != :game_over}
+      class={["grid grid-cols-2 gap-4", @game_state == :waiting_to_start && "!grid-cols-1"]}
+    >
       <.button
         :if={@game_state != :waiting_to_start}
         phx-click="clear-votes"
-        class="!bg-transparent !text-blue-500 outline outline-1 outline-blue-500 rounded-md 
-        hover:outline-2 hover:outline-blue-600 hover:bg-transparent
-      "
+        class={[
+          "!bg-transparent !text-blue-500 outline outline-1 outline-blue-500 rounded-md",
+          "hover:outline-2 hover:outline-blue-600 hover:bg-transparent",
+          @game_state == :show_results && "col-span-2"
+        ]}
       >
         Clear Votes
       </.button>
       <.button
-        :if={@game_state != :waiting_to_start}
+        :if={@game_state != :waiting_to_start and @game_state != :show_results}
         phx-click="end-voting"
         class="!bg-transparent !text-blue-500 outline outline-1 outline-blue-500 rounded-md 
         hover:outline-2 hover:outline-blue-600 hover:bg-transparent
@@ -99,13 +104,16 @@
       <.button
         :if={@game_state != :waiting_to_start}
         phx-click="skip-ticket"
-        class="!bg-transparent !text-blue-500 outline outline-1 outline-blue-500 rounded-md 
-        hover:outline-2 hover:outline-blue-600 hover:bg-transparent
-      "
+        class={[
+          "!bg-transparent !text-blue-500 outline outline-1 outline-blue-500 rounded-md",
+          "hover:outline-2 hover:outline-blue-600 hover:bg-transparent",
+          @game_state == :voting && "col-span-2"
+        ]}
       >
         Skip Ticket
       </.button>
       <.button
+        :if={@game_state != :voting}
         phx-click="next-ticket"
         class="!bg-transparent !text-blue-500 outline outline-1 outline-blue-500 rounded-md
         hover:outline-2 hover:outline-blue-600 hover:bg-transparent

@@ -359,7 +359,7 @@ defmodule QuickPoint.Game.GameState do
   end
 
   defp get_effort(%Game{} = state) do
-    [{result, _}] =
+    result =
       Map.values(state.votes)
       |> Enum.map(&String.to_integer/1)
       |> Enum.frequencies()
@@ -367,7 +367,13 @@ defmodule QuickPoint.Game.GameState do
       |> Enum.sort(&>=/2)
       |> Enum.take(1)
 
-    result
+    case result do
+      [{effort, _}] ->
+        effort
+
+      [] ->
+        nil
+    end
   end
 
   defp process_name(room_id), do: {:via, Registry, {GameRegistry, room_id}}
