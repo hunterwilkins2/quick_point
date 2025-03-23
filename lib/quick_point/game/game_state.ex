@@ -129,8 +129,21 @@ defmodule QuickPoint.Game.GameState do
   @impl true
   def handle_cast(:skip_ticket, %Game{} = state) do
     Logger.debug("Skipping ticket in #{state.room.id}", ansi_color: :blue)
+    {:ok, ticket} = Tickets.update_ticket(state.active_ticket, %{status: :completed})
+    index = Enum.find_index(state.tickets, &(&1.id == ticket.id))
 
-    state = %Game{state | state: :voting, votes: %{}, total_votes: 0}
+    state =
+      %Game{
+        state
+        | state: :voting,
+          votes: %{},
+          total_votes: 0,
+          tickets: List.replace_at(state.tickets, index, ticket)
+      }
+      |> count_tickets()
+      |> set_active_ticket()
+      |> get_state()
+
     broadcast_state!(state)
 
     {:noreply, state}
