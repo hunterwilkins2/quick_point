@@ -2,7 +2,7 @@
 
 Quick Point is a self-hosted Planning Poker application built with Elixir and Phoenix. It enables real-time collaboration for agile teams to estimate story points effectively.
 
-![Demo of Quick Point](https://github.com/hunterwilkins2/quick_point/blob/master/media/quick_point_demo.mp4)
+https://github.com/user-attachments/assets/f0226556-d591-4fc7-bc60-7bc974f0d69a
 
 To start your Phoenix server:
 
