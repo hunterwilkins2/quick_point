@@ -98,7 +98,7 @@ defmodule QuickPointWeb.RoomLive.Show do
         {:noreply, socket}
 
       {:error, :unauthorized_action} ->
-        put_flash(socket, :error, "Only moderators may preform that action")
+        {:noreply, put_flash(socket, :error, "Only moderators may preform that action")}
     end
   end
 
@@ -110,7 +110,7 @@ defmodule QuickPointWeb.RoomLive.Show do
            socket.assigns.ticket_filter
          ) do
       {:error, :unauthorized_action} ->
-        put_flash(socket, :error, "Only moderators may preform that action")
+        {:noreply, put_flash(socket, :error, "Only moderators may preform that action")}
 
       {_, _} ->
         GameState.delete_all_tickets(socket.assigns.room.id, socket.assigns.ticket_filter)
