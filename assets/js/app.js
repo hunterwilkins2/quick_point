@@ -27,7 +27,6 @@ let hooks = {}
 hooks.ChartJS = {
   dataset() { return JSON.parse(this.el.dataset.points); },
   mounted() {
-    console.log(this.dataset())
     const ctx = this.el;
     const data = {
       type: "doughnut",
