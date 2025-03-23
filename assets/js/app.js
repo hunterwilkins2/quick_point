@@ -24,20 +24,30 @@ import topbar from "../vendor/topbar"
 import Chart from 'chart.js/auto'
 
 let hooks = {}
+let chart;
 hooks.ChartJS = {
   dataset() { return JSON.parse(this.el.dataset.points); },
   mounted() {
+    console.log(this.dataset())
     const ctx = this.el;
     const data = {
       type: "doughnut",
       data: this.dataset(),
       options: {
-        responsive: false
+        devicePixelRatio: 4
       }
     };
-    const chart = new Chart(ctx, data);
+    chart = new Chart(ctx, data);
+  },
+  updated() {
+    chart.resize(384, 384);
+  },
+  destroyed() {
+    chart = null;
   }
 }
+
+window.addEventListener('resize', () => chart.resize(384, 384))
 
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
