@@ -36,6 +36,9 @@ defmodule QuickPoint.Game.GameState do
   def edit_ticket(room_id, ticket),
     do: GenServer.cast(process_name(room_id), {:edit_ticket, ticket})
 
+  def delete_ticket(room_id, ticket),
+    do: GenServer.cast(process_name(room_id), {:delete_ticket, ticket})
+
   @impl true
   def init(room_id) do
     # Process.flag(:trap_exit, true)
@@ -185,6 +188,22 @@ defmodule QuickPoint.Game.GameState do
   end
 
   @impl true
+  def handle_cast({:delete_ticket, %Ticket{} = ticket}, %Game{} = state) do
+    ticket = Enum.find(state.tickets, &(&1.id == ticket.id))
+    Logger.debug("Deleting ticket #{ticket.name} in #{state.room.id}", ansi_color: :blue)
+
+    state =
+      %Game{state | tickets: List.delete(state.tickets, ticket)}
+      |> count_tickets()
+      |> set_active_ticket()
+      |> get_state()
+
+    broadcast_state!(state)
+
+    {:noreply, state}
+  end
+
+  @impl true
   def handle_call(:get_state, _from, %Game{} = state), do: {:reply, state, state}
 
   @impl true
@@ -238,12 +257,14 @@ defmodule QuickPoint.Game.GameState do
     %Game{
       state
       | total_tickets: Enum.count(state.tickets),
-        total_tickets_not_started: frequences[:not_started],
-        total_tickets_completed: frequences[:completed]
+        total_tickets_not_started: Map.get(frequences, :not_started, 0),
+        total_tickets_completed: Map.get(frequences, :completed, 0)
     }
   end
 
-  defp get_state(%Game{state: :game_over, active_ticket: nil} = state), do: state
+  defp get_state(%Game{active_ticket: nil} = state) do
+    %Game{state | state: :game_over, votes: %{}, total_votes: 0}
+  end
 
   defp get_state(%Game{state: :game_over, active_ticket: _ticket_} = state) do
     %Game{state | state: :waiting_to_start}
@@ -254,11 +275,7 @@ defmodule QuickPoint.Game.GameState do
     %Game{state | state: :show_results}
   end
 
-  defp get_state(%Game{state: :waiting_to_start} = state), do: state
-
-  defp get_state(%Game{state: :voting} = state), do: state
-
-  defp get_state(%Game{state: :show_results} = state), do: state
+  defp get_state(%Game{} = state), do: state
 
   defp set_active_ticket(%Game{} = state) do
     %Game{state | active_ticket: Enum.find(state.tickets, &(&1.status == :not_started))}
