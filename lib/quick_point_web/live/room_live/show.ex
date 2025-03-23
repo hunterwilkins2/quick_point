@@ -6,6 +6,7 @@ defmodule QuickPointWeb.RoomLive.Show do
   alias QuickPoint.Game.Game
   alias QuickPoint.Tickets
   alias QuickPoint.Tickets.Ticket
+  alias QuickPoint.Rooms
 
   on_mount {QuickPointWeb.UserAuth, :ensure_authenticated}
 
@@ -19,10 +20,11 @@ defmodule QuickPointWeb.RoomLive.Show do
     end
 
     state = GameState.current_state(id)
+    roles = Rooms.list_or_create_roles(socket.assigns.current_user, state.room)
 
     socket =
       socket
-      |> assign(is_moderator: true)
+      |> assign(is_moderator: Enum.any?(roles, &(&1.role == :moderator)))
       |> assign(ticket_filter: "not_started")
       |> update_state(state)
 
