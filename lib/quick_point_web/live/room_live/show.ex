@@ -103,6 +103,22 @@ defmodule QuickPointWeb.RoomLive.Show do
   end
 
   @impl true
+  def handle_event("delete-all", _params, socket) do
+    case Tickets.delete_where(
+           socket.assigns.current_user,
+           socket.assigns.room,
+           socket.assigns.ticket_filter
+         ) do
+      {:error, :unauthorized_action} ->
+        put_flash(socket, :error, "Only moderators may preform that action")
+
+      {_, _} ->
+        GameState.delete_all_tickets(socket.assigns.room.id, socket.assigns.ticket_filter)
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
   def handle_info({GameState, new_state}, socket), do: {:noreply, update_state(socket, new_state)}
 
   defp update_state(socket, %Game{} = state) do

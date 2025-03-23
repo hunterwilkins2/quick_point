@@ -39,6 +39,9 @@ defmodule QuickPoint.Game.GameState do
   def delete_ticket(room_id, ticket),
     do: GenServer.cast(process_name(room_id), {:delete_ticket, ticket})
 
+  def delete_all_tickets(room_id, filter),
+    do: GenServer.cast(process_name(room_id), {:delete_all_tickets, filter})
+
   @impl true
   def init(room_id) do
     # Process.flag(:trap_exit, true)
@@ -194,6 +197,51 @@ defmodule QuickPoint.Game.GameState do
 
     state =
       %Game{state | tickets: List.delete(state.tickets, ticket)}
+      |> count_tickets()
+      |> set_active_ticket()
+      |> get_state()
+
+    broadcast_state!(state)
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:delete_all_tickets, "not_started"}, state) do
+    Logger.debug("Deleting all not started tickets in #{state.room.id}", ansi_color: :blue)
+
+    state =
+      %Game{state | tickets: Enum.filter(state.tickets, &(&1.status != :not_started))}
+      |> count_tickets()
+      |> set_active_ticket()
+      |> get_state()
+
+    broadcast_state!(state)
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:delete_all_tickets, "completed"}, state) do
+    Logger.debug("Deleting all completed tickets in #{state.room.id}", ansi_color: :blue)
+
+    state =
+      %Game{state | tickets: Enum.filter(state.tickets, &(&1.status != :completed))}
+      |> count_tickets()
+      |> set_active_ticket()
+      |> get_state()
+
+    broadcast_state!(state)
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:delete_all_tickets, "total"}, state) do
+    Logger.debug("Deleting all tickets in #{state.room.id}", ansi_color: :blue)
+
+    state =
+      %Game{state | tickets: %{}}
       |> count_tickets()
       |> set_active_ticket()
       |> get_state()
