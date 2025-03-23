@@ -140,6 +140,7 @@ defmodule QuickPointWeb.RoomLive.Show do
     |> assign(:total_tickets_not_started, state.total_tickets_not_started)
     |> assign(:total_tickets_completed, state.total_tickets_completed)
     |> assign(:total_tickets, state.total_tickets)
+    |> assign(:dataset, create_dataset(state.votes))
   end
 
   defp filter_tickets(tickets, "total"), do: tickets
@@ -148,4 +149,20 @@ defmodule QuickPointWeb.RoomLive.Show do
     do: Enum.filter(tickets, &(&1.status == :not_started))
 
   defp filter_tickets(tickets, "completed"), do: Enum.filter(tickets, &(&1.status == :completed))
+
+  defp create_dataset(votes) do
+    data =
+      Map.values(votes)
+      |> Enum.map(&String.to_integer/1)
+      |> Enum.frequencies()
+
+    %{
+      labels: Map.keys(data),
+      datasets: [
+        %{
+          data: Map.values(data)
+        }
+      ]
+    }
+  end
 end

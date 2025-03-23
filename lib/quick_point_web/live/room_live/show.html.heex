@@ -15,11 +15,23 @@
       end}
     </h1>
 
-    <.cards
-      cards={~W"1 2 3 5 8 13 21 34 55"}
-      vote={@vote}
-      can_vote={@game_state == :voting or @game_state == :show_results}
-    />
+    <%= if @game_state != :show_results do %>
+      <.cards
+        cards={~W"1 2 3 5 8 13 21 34 55"}
+        vote={@vote}
+        can_vote={@game_state == :voting or @game_state == :show_results}
+      />
+    <% else %>
+      <div class="w-full flex justify-center">
+        <canvas
+          id="results"
+          class="!w-96 !h-96"
+          phx-hook="ChartJS"
+          data-points={Jason.encode!(@dataset)}
+        >
+        </canvas>
+      </div>
+    <% end %>
 
     <.ticket_selector
       room={@room}
