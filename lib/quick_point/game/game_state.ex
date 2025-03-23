@@ -163,7 +163,23 @@ defmodule QuickPoint.Game.GameState do
   def handle_cast(:next_ticket, %Game{} = state) do
     Logger.debug("Moving to next ticket in #{state.room.id}", ansi_color: :blue)
 
-    state = %Game{state | state: :voting, votes: %{}, total_votes: 0}
+    {:ok, ticket} =
+      Tickets.update_ticket(state.active_ticket, %{status: :completed, effort: get_effort(state)})
+
+    index = Enum.find_index(state.tickets, &(&1.id == ticket.id))
+
+    state =
+      %Game{
+        state
+        | state: :voting,
+          votes: %{},
+          total_votes: 0,
+          tickets: List.replace_at(state.tickets, index, ticket)
+      }
+      |> count_tickets()
+      |> set_active_ticket()
+      |> get_state()
+
     broadcast_state!(state)
 
     {:noreply, state}
@@ -340,6 +356,18 @@ defmodule QuickPoint.Game.GameState do
 
   defp set_active_ticket(%Game{} = state) do
     %Game{state | active_ticket: Enum.find(state.tickets, &(&1.status == :not_started))}
+  end
+
+  defp get_effort(%Game{} = state) do
+    [{result, _}] =
+      Map.values(state.votes)
+      |> Enum.map(&String.to_integer/1)
+      |> Enum.frequencies()
+      |> Enum.sort_by(fn {_, count} -> count end, &>=/2)
+      |> Enum.sort(&>=/2)
+      |> Enum.take(1)
+
+    result
   end
 
   defp process_name(room_id), do: {:via, Registry, {GameRegistry, room_id}}
