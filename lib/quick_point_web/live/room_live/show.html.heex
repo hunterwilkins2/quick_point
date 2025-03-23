@@ -168,7 +168,12 @@
     </ul>
     <details>
       <summary>Invite a teammate</summary>
-      <input id="share-link" type="text" value="wut" />
+      <input
+        id="share-link"
+        type="text"
+        value={"#{Application.fetch_env!(:quick_point, :host_url)}/rooms/#{@room.id}"}
+        readonly
+      />
     </details>
   </div>
 </div>
