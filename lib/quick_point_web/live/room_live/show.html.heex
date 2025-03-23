@@ -1,8 +1,13 @@
 <.header>
   {@room.name}
-  <:actions>
-    <.back navigate={~p"/rooms"}>Back to rooms</.back>
-  </:actions>
+  <:header_actions>
+    <.link
+      navigate={~p"/rooms"}
+      class="text-sm font-semibold leading-6 text-zinc-900 hover:text-zinc-700"
+    >
+      <.icon name="hero-arrow-left-solid" class="h-3 w-3" /> Back to rooms
+    </.link>
+  </:header_actions>
 </.header>
 
 <div class="grid grid-cols-[8fr_4fr] gap-16 mt-8">
@@ -66,7 +71,9 @@
       :if={@is_moderator}
       phx-click={JS.push("delete-all")}
       data-confirm="Are you sure?"
-      class="float-end"
+      class="!bg-transparent text-purple-500 outline outline-1 outline-purple-500 mt-8 float-end
+        hover:outline-3 hover:outline-purple-800 hover:!bg-purple-500 hover:text-white
+      "
     >
       Delete All
     </.button>
@@ -74,7 +81,7 @@
 
   <div class="mt-11 bg-neutral-200 h-min rounded-md shadow-md 
     [&>*]:p-4 [&>*:not(:last-child)]:border-b [&>*:not(:last-child)]:border-stone-300">
-    <p class="text-center font-semibold text-lg bg-blue-500 text-white rounded-t-md">
+    <p class="text-center font-semibold text-lg bg-purple-500 text-white rounded-t-md">
       {case @game_state do
         :game_over ->
           "Add tickets to get started"
@@ -97,8 +104,8 @@
         :if={@game_state != :waiting_to_start}
         phx-click="clear-votes"
         class={[
-          "!bg-transparent !text-blue-500 outline outline-1 outline-blue-500 rounded-md",
-          "hover:outline-2 hover:outline-blue-600 hover:bg-transparent",
+          "!bg-transparent !text-purple-500 outline outline-1 outline-purple-500 rounded-md",
+          "hover:outline-2 hover:outline-purple-600 hover:bg-transparent",
           @game_state == :show_results && "col-span-2"
         ]}
       >
@@ -107,8 +114,8 @@
       <.button
         :if={@game_state != :waiting_to_start and @game_state != :show_results}
         phx-click="end-voting"
-        class="!bg-transparent !text-blue-500 outline outline-1 outline-blue-500 rounded-md 
-        hover:outline-2 hover:outline-blue-600 hover:bg-transparent
+        class="!bg-transparent !text-purple-500 outline outline-1 outline-purple-500 rounded-md 
+        hover:outline-2 hover:outline-purple-600 hover:bg-transparent
       "
       >
         End Voting
@@ -117,8 +124,8 @@
         :if={@game_state != :waiting_to_start}
         phx-click="skip-ticket"
         class={[
-          "!bg-transparent !text-blue-500 outline outline-1 outline-blue-500 rounded-md",
-          "hover:outline-2 hover:outline-blue-600 hover:bg-transparent",
+          "!bg-transparent !text-purple-500 outline outline-1 outline-purple-500 rounded-md",
+          "hover:outline-2 hover:outline-purple-600 hover:bg-transparent",
           @game_state == :voting && "col-span-2"
         ]}
       >
@@ -127,8 +134,8 @@
       <.button
         :if={@game_state != :voting}
         phx-click="next-ticket"
-        class="!bg-transparent !text-blue-500 outline outline-1 outline-blue-500 rounded-md
-        hover:outline-2 hover:outline-blue-600 hover:bg-transparent
+        class="!bg-transparent !text-purple-500 outline outline-1 outline-blue-purple rounded-md
+        hover:outline-2 hover:outline-purple-600 hover:bg-transparent
       "
       >
         Next Ticket
@@ -173,7 +180,7 @@
           :if={vote}
           name="check-circle"
           type="outline"
-          class="text-blue-500 ml-1 h-5 w-5"
+          class="text-purple-500 ml-1 h-5 w-5"
         />
         <p :if={@game_state == :show_results} class="ml-auto font-semibold">{vote}</p>
       </li>

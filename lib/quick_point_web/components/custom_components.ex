@@ -22,9 +22,9 @@ defmodule QuickPointWeb.CustomComponents do
 
   def card(assigns) do
     ~H"""
-    <div class="[&_[type=radio]:checked+label]:bg-blue-500
+    <div class="[&_[type=radio]:checked+label]:bg-purple-500
                 [&_[type=radio]:checked+label]:text-white
-                [&_[type=radio]:checked+label]:border-blue-600
+                [&_[type=radio]:checked+label]:border-purple-600
                 [&_[type=radio]:disabled+label]:cursor-not-allowed
                 [&_[type=radio]:checked+label>div:nth-child(2)]:border-white
     ">
@@ -41,7 +41,7 @@ defmodule QuickPointWeb.CustomComponents do
         for={"card-#{@value}"}
         class="grid grid-rows-3 grid-cols-3 items-center justify-items-center cursor-pointer
           w-24 h-32 bg-neutral-200 border-2 border-stone-300 rounded-md text-neutral-600
-          shadow-md select-none hover:border-blue-500"
+          shadow-md select-none hover:border-purple-500"
       >
         <div class="col-1 row-1">{@value}</div>
         <div class="col-start-2 row-start-2 text-xl w-12 h-16 text-center leading-[3.5rem] border-2 border-stone-300 rounded-md">
@@ -66,7 +66,7 @@ defmodule QuickPointWeb.CustomComponents do
       <div class="[&_[type=radio]]:hidden
         [&_[type=radio]:checked+label]:[text-shadow:_1px_0_0_currentColor]
         [&_[type=radio]:checked+label]:border-b-2
-        [&_[type=radio]:checked+label]:border-blue-400
+        [&_[type=radio]:checked+label]:border-purple-400
       ">
         <input
           type="radio"
@@ -89,7 +89,7 @@ defmodule QuickPointWeb.CustomComponents do
       <div class="[&_[type=radio]]:hidden
         [&_[type=radio]:checked+label]:[text-shadow:_1px_0_0_currentColor]
         [&_[type=radio]:checked+label]:border-b-2
-        [&_[type=radio]:checked+label]:border-blue-400
+        [&_[type=radio]:checked+label]:border-purple-400
       ">
         <input
           type="radio"
@@ -112,7 +112,7 @@ defmodule QuickPointWeb.CustomComponents do
       <div class="[&_[type=radio]]:hidden
         [&_[type=radio]:checked+label]:[text-shadow:_1px_0_0_currentColor]
         [&_[type=radio]:checked+label]:border-b-2
-        [&_[type=radio]:checked+label]:border-blue-400
+        [&_[type=radio]:checked+label]:border-purple-400
       ">
         <input
           type="radio"
@@ -133,7 +133,7 @@ defmodule QuickPointWeb.CustomComponents do
       </div>
       <div :if={@is_moderator} class="flex-grow">
         <.link patch={~p"/rooms/#{@room}/tickets/new"} class="float-end">
-          <.button>New Ticket</.button>
+          <.button class="!bg-purple-500">New Ticket</.button>
         </.link>
       </div>
     </form>
